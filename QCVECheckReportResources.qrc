@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/">
+        <file>CVE.png</file>
+        <file>DejaVuSerif-Bold.ttf</file>
+        <file>DejaVuSerif.ttf</file>
+        <file>QCVECheckReport.png</file>
+    </qresource>
+</RCC>
