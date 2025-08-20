@@ -26,16 +26,18 @@
  */
 
 #include "mdipdfreport.h"
-#include "AbstractContentContext.h"
-#include "PDFDocumentCopyingContext.h"
-#include "PDFModifiedPage.h"
-#include "PDFUsedFont.h"
 #include "qmessagebox.h"
 #include "ui_mdipdfreport.h"
 #include <QResizeEvent>
 #include <QFileDialog>
 #include <QWebEngineProfile>
 #include <QPrinterInfo>
+
+#if PDFWRITER
+#include "AbstractContentContext.h"
+#include "PDFDocumentCopyingContext.h"
+#include "PDFModifiedPage.h"
+#include "PDFUsedFont.h"
 #include <PDFWriter.h>
 #include <PDFParser.h>
 #include <PDFPage.h>
@@ -46,8 +48,8 @@
 #include <DictionaryContext.h>
 #include <PageContentContext.h>
 #include <DocumentContext.h>
-
 using namespace PDFHummus;
+#endif
 
 MdiPDFReport::MdiPDFReport(const QString &fileName, QSQLiteManager* sqlManager, QWidget *parent):
     QMdiSubWindow(parent), reportFile(fileName), pageMargins{25, 35, 25, 35}, sqliteManager(sqlManager),
@@ -144,12 +146,15 @@ void MdiPDFReport::ReportPrinted(const QString &fileName, bool success)
                     destination.remove(filePath);
                 }
 
+#if PDFWRITER
                 if (eFailure == PDFModifyFooterContext(fileName, filePath))
                 {
                     QMessageBox::critical(this, "Export report failed", "Report printing failed");
                     return;
                 }
-
+#else
+                QFile::copy(fileName, filePath);
+#endif
                 QFile::remove(fileName);
             }
         }
@@ -160,7 +165,7 @@ void MdiPDFReport::ReportPrinted(const QString &fileName, bool success)
     }
 }
 
-
+#if PDFWRITER
 EStatusCode MdiPDFReport::PDFModifyFooterContext(const QString& srcFile, const QString& outFile)
 {
     EStatusCode status = eSuccess;
@@ -232,3 +237,4 @@ EStatusCode MdiPDFReport::PDFModifyFooterContext(const QString& srcFile, const Q
     }
     return status;
 }
+#endif

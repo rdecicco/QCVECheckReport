@@ -42,7 +42,6 @@
 #include <QResizeEvent>
 #include <QWindow>
 #include <ui_dialogimportcvereport.h>
-#include <PDFWriter.h>
 
 QCVECheckApp::QCVECheckApp(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::QCVECheckApp), sqliteDBManager(new QSQLiteManager(this)), mdiCVEDataMutex(new QMutex()), subWindowMapMutex(new QMutex())

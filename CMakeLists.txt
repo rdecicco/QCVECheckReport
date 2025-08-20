@@ -25,7 +25,7 @@
 
 cmake_minimum_required(VERSION 3.29.3)
 
-project(QCVECheckReport VERSION 0.1 LANGUAGES CXX)
+project(QCVECheckReport VERSION 0.2 LANGUAGES CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -35,6 +35,8 @@ set(CMAKE_AUTORCC ON)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+set(USE_PDFWRITER False)
 
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets LinguistTools REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets LinguistTools REQUIRED)
@@ -139,17 +141,21 @@ target_link_libraries(QCVECheckReport PRIVATE
 )
 target_link_libraries(QCVECheckReport PRIVATE Qt${QT_VERSION_MAJOR}::Pdf)
 
-include(FetchContent)
+if(USE_PDFWRITER)
+    add_compile_definitions(PDFWRITER 1)
 
-FetchContent_Declare(
-  PDFHummus
-  GIT_REPOSITORY https://github.com/galkahana/PDF-Writer.git
-  GIT_TAG        v4.6.2
-  FIND_PACKAGE_ARGS
-)
-FetchContent_MakeAvailable(PDFHummus)
+    include(FetchContent)
 
-target_link_libraries(QCVECheckReport PRIVATE PDFHummus::PDFWriter)
+    FetchContent_Declare(
+      PDFHummus
+      GIT_REPOSITORY https://github.com/galkahana/PDF-Writer.git
+      GIT_TAG        v4.6.2
+      FIND_PACKAGE_ARGS
+    )
+    FetchContent_MakeAvailable(PDFHummus)
+
+    target_link_libraries(QCVECheckReport PRIVATE PDFHummus::PDFWriter)
+endif()
 
 set_target_properties(QCVECheckReport PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com

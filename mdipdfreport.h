@@ -34,8 +34,10 @@
 #include <QPrinter>
 #include <QPageLayout>
 #include <QPageSize>
-#include <PDFWriter.h>
 
+#if PDFWRITER
+#include <PDFWriter.h>
+#endif
 
 namespace Ui {
 class MdiPDFReport;
@@ -64,10 +66,13 @@ private:
     QPageLayout pageLayout;
     QSize pageSize;
 
-    void PrintReport();    
-    EStatusCode PDFModifyFooterContext(const QString &srcFile, const QString &outFile);
-    QString randomString(int length, QString string = QString());
+    void PrintReport();
 
+#if PDFWRITER
+    EStatusCode PDFModifyFooterContext(const QString &srcFile, const QString &outFile);
+#endif
+
+    QString randomString(int length, QString string = QString());
 
 protected:
     void resizeEvent(QResizeEvent *ev) override;
