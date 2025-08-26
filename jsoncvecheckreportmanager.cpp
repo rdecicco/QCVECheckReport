@@ -64,17 +64,23 @@ bool JsonCVECheckReportManager::isValidCVEReport()
         QJsonValue version = CVEReport.value("version");
         if (version.isNull() || !version.isString())
         {
+            QMessageBox::critical(nullptr, tr("Import Json Report Error"), tr("Import of CSV Report Failed: Not valid json report version"));
             return false;
         }
         QJsonValue packages = CVEReport.value("package");
         if (!packages.isArray())
         {
+            QMessageBox::critical(nullptr, tr("Import Json Report Error"), tr("Import of CSV Report Failed: Not valid json report"));
             return false;
         }
         for (auto&& package : packages.toArray())
         {
+            QString packageName;
+            QString packageLayer;
+            QString packageVersion;
             if (!package.isObject())
             {
+                QMessageBox::critical(nullptr, tr("Import Json Report Error"), tr("Import of CSV Report Failed: Not valid package"));
                 return false;
             }
             QJsonObject packageObject = package.toObject();
@@ -87,7 +93,17 @@ bool JsonCVECheckReportManager::isValidCVEReport()
                 {
                     if (packageValue.isNull() || !packageValue.isString())
                     {
+                        QMessageBox::critical(nullptr, tr("Import Json Report Error"), tr("Import of CSV Report Failed: Not valid package key value:") + packageName + ": " + packageKey);
                         return false;
+                    }
+                    else
+                    {
+                        if (packageKey == "name")
+                            packageName = packageValue.toString();
+                        else if (packageKey == "layer")
+                            packageLayer = packageValue.toString();
+                        else if (packageKey == "version")
+                            packageVersion = packageValue.toString();
                     }
                 }
                 else if (packageKey == "products")
@@ -95,12 +111,14 @@ bool JsonCVECheckReportManager::isValidCVEReport()
                     QJsonValue products = packageObject.value("products");
                     if (!products.isArray())
                     {
+                        QMessageBox::critical(nullptr, tr("Import Json Report Error"), tr("Import of CSV Report Failed: Not valid products: ") + packageName + ": " + packageKey);
                         return false;
                     }
                     for (auto&& product : products.toArray())
                     {
                         if (!product.isObject())
                         {
+                            QMessageBox::critical(nullptr, tr("Import Json Report Error"), tr("Import of CSV Report Failed: Not valid product of package:") + packageName + ": " + product.toString());
                             return false;
                         }
                         QJsonObject productObject = product.toObject();
@@ -112,11 +130,13 @@ bool JsonCVECheckReportManager::isValidCVEReport()
                             {
                                 if (productValue.isNull() || !productValue.isString())
                                 {
+                                    QMessageBox::critical(nullptr, tr("Import Json Report Error"), tr("Import of CSV Report Failed: Not valid product value of package:") + packageName + " - " + productKey);
                                     return false;
                                 }
                             }
                             else
                             {
+                                QMessageBox::critical(nullptr, tr("Import Json Report Error"), tr("Import of CSV Report Failed: Not valid product key of package:") + packageName + ": " + productKey);
                                 return false;
                             }
                         }
@@ -127,12 +147,14 @@ bool JsonCVECheckReportManager::isValidCVEReport()
                     QJsonValue issues = packageObject.value("issue");
                     if (!issues.isArray())
                     {
+                        QMessageBox::critical(nullptr, tr("Import Json Report Error"), tr("Import of CSV Report Failed: Not valid issues of package: ") + packageName);
                         return false;
                     }
                     for (auto&& issue : issues.toArray())
                     {
                         if (!issue.isObject())
                         {
+                            QMessageBox::critical(nullptr, tr("Import Json Report Error"), tr("Import of CSV Report Failed: Not valid issue of package:") + packageName);
                             return false;
                         }
                         QJsonObject issueObject = issue.toObject();
@@ -143,20 +165,35 @@ bool JsonCVECheckReportManager::isValidCVEReport()
                                 issueKey == "summary" ||
                                 issueKey == "scorev2" ||
                                 issueKey == "scorev3" ||
+                                issueKey == "scorev4" ||
                                 issueKey == "vector" ||
                                 issueKey == "vectorString" ||
                                 issueKey == "status" ||
                                 issueKey == "link" ||
                                 issueKey == "detail" ||
-                                issueKey == "description")
+                                issueKey == "description" ||
+                                issueKey == "modified" ||
+                                issueKey == "patch-file")
                             {
-                                if (issueValue.isNull() || !issueValue.isString())
+                                if (issueKey == "vectorString")
+                                    continue;
+                                else if (issueKey == "patch-file" && issueValue.isArray() && !issueValue.toArray().isEmpty())
                                 {
+                                    continue;
+                                }
+                                else if (!issueValue.isNull() && issueValue.isString())
+                                {
+                                    continue;
+                                }
+                                else
+                                {
+                                    QMessageBox::critical(nullptr, tr("Import Json Report Error"), tr("Import of CSV Report Failed: Not valid issue value of package:") + packageName + ": " + issueKey);
                                     return false;
                                 }
                             }
                             else
                             {
+                                QMessageBox::critical(nullptr, tr("Import Json Report Error"), tr("Import of CSV Report Failed: Not valid issueKey of package:") + packageName + ": " + issueKey);
                                 return false;
                             }
                         }
@@ -164,6 +201,7 @@ bool JsonCVECheckReportManager::isValidCVEReport()
                 }
                 else
                 {
+                    QMessageBox::critical(nullptr, tr("Import Json Report Error"), tr("Import of CSV Report Failed: Not valid packageKey of package:") + packageName + ": " + packageKey);
                     return false;
                 }
             }
@@ -171,6 +209,7 @@ bool JsonCVECheckReportManager::isValidCVEReport()
     }
     else
     {
+        QMessageBox::critical(nullptr, tr("Import Json Report Error"), tr("Import of CSV Report Failed: Not valid json document"));
         return false;
     }
     return true;

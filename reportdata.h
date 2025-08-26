@@ -182,7 +182,8 @@ public:
     QSqlQueryModel* getIgnoredCVEs() { return ignoredCVEs; };
 
     qint64 selectPackagesRowCount(bool showUnpatchedOnly=false, const QString &filter=QString(""));
-    qint64 selectCVEsRowCount(qint64 packageID=0, const QString& status=QString(""), const QString& vector=QString(""), double startingCVSS3 = 0, double endingCVSS3 = 10, const QString& filter=QString(""));
+    qint64 selectCVEsRowCount(qint64 packageID=0, const QString& status=QString(""), const QString& vector=QString(""), double startingCVSS4 = 0, double endingCVSS4= 10, double startingCVSS3 = 0, double endingCVSS3 = 10, double startingCVSS2 = 0, double endingCVSS2 = 10, const QString& filter=QString(""));
+    qint64 selectNoneCVEsRowCount(qint64 packageID=0, const QString& status=QString(""), const QString& vector=QString(""), const QString& filter=QString(""));
     qint64 selectIgnoredCVEsRowCount(const QString &filter=QString(""));
 
     QTextDocument* GenerateHtmlReport();
@@ -190,7 +191,8 @@ public:
 
 public slots:
     void selectPackages(bool showUnpatchedOnly, int entries, int page, const QString &filter);
-    void selectCVEs(qint64 packageID, const QString& status, const QString& vector, double startingCVSS3, double endingCVSS3, int entries, int page, const QString& filter);
+    void selectCVEs(qint64 packageID, const QString& status, const QString& vector, double startingCVSS4, double endingCVSS4, double startingCVSS3, double endingCVSS3, double startingCVSS2, double endingCVSS2, int entries, int page, const QString& filter);
+    void selectNoneCVEs(qint64 packageID, const QString& status, const QString& vector, int entries, int page, const QString& filter);
     void selectIgnoredCVEs(int entries, int page, const QString &filter);
 
 protected:

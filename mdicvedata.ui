@@ -20,28 +20,28 @@
       </size>
      </property>
      <property name="verticalScrollBarPolicy">
-      <enum>Qt::ScrollBarAlwaysOn</enum>
+      <enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOn</enum>
      </property>
      <property name="sizeAdjustPolicy">
-      <enum>QAbstractScrollArea::AdjustToContents</enum>
+      <enum>QAbstractScrollArea::SizeAdjustPolicy::AdjustToContents</enum>
      </property>
      <property name="widgetResizable">
       <bool>true</bool>
      </property>
      <property name="alignment">
-      <set>Qt::AlignCenter</set>
+      <set>Qt::AlignmentFlag::AlignCenter</set>
      </property>
      <widget class="QWidget" name="scrollAreaWidgetContents">
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-598</y>
+        <y>0</y>
         <width>1244</width>
         <height>1224</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayoutScrollAreaWidget">
-       <item alignment="Qt::AlignTop">
+       <item alignment="Qt::AlignmentFlag::AlignTop">
         <widget class="QGroupBox" name="groupBoxNVDs">
          <property name="minimumSize">
           <size>
@@ -122,7 +122,7 @@
             <item>
              <spacer name="horizontalSpacerNVDsTop">
               <property name="orientation">
-               <enum>Qt::Horizontal</enum>
+               <enum>Qt::Orientation::Horizontal</enum>
               </property>
               <property name="sizeHint" stdset="0">
                <size>
@@ -231,7 +231,7 @@
             <item>
              <spacer name="horizontalSpacerCVEsBottom">
               <property name="orientation">
-               <enum>Qt::Horizontal</enum>
+               <enum>Qt::Orientation::Horizontal</enum>
               </property>
               <property name="sizeHint" stdset="0">
                <size>
@@ -320,7 +320,7 @@
           <item row="3" column="0">
            <widget class="QTableWidget" name="tableWidgetNVDs">
             <property name="sizeAdjustPolicy">
-             <enum>QAbstractScrollArea::AdjustIgnored</enum>
+             <enum>QAbstractScrollArea::SizeAdjustPolicy::AdjustIgnored</enum>
             </property>
             <property name="sortingEnabled">
              <bool>true</bool>
@@ -358,6 +358,11 @@
             <column>
              <property name="text">
               <string>ScoreV3</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string>ScoreV4</string>
              </property>
             </column>
             <column>
@@ -433,7 +438,7 @@
             <item row="0" column="1" rowspan="2">
              <spacer name="horizontalSpacerProduct">
               <property name="orientation">
-               <enum>Qt::Horizontal</enum>
+               <enum>Qt::Orientation::Horizontal</enum>
               </property>
               <property name="sizeHint" stdset="0">
                <size>
@@ -569,7 +574,7 @@
             <item>
              <spacer name="horizontalSpacerProductsTop">
               <property name="orientation">
-               <enum>Qt::Horizontal</enum>
+               <enum>Qt::Orientation::Horizontal</enum>
               </property>
               <property name="sizeHint" stdset="0">
                <size>
@@ -619,7 +624,7 @@
           <item row="1" column="0">
            <widget class="QTableWidget" name="tableWidgetProducts">
             <property name="sizeAdjustPolicy">
-             <enum>QAbstractScrollArea::AdjustIgnored</enum>
+             <enum>QAbstractScrollArea::SizeAdjustPolicy::AdjustIgnored</enum>
             </property>
             <property name="sortingEnabled">
              <bool>true</bool>

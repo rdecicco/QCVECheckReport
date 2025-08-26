@@ -89,7 +89,7 @@ void MdiPDFReport::LoadReportData()
     }
     catch (...)
     {
-        QMessageBox::critical(this, "Export report failed", "Report loading failed");
+        QMessageBox::critical(this, tr("Export report failed"), tr("Report loading failed"));
     }
 }
 
@@ -103,13 +103,13 @@ void MdiPDFReport::ReportLoaded(bool ok)
         }
         else
         {
-            QMessageBox::critical(this, "Report load failed", "HTML report unseccesfully loaded");
+            QMessageBox::critical(this, tr("Report load failed"), tr("HTML report unseccesfully loaded"));
             close();
         }
     }
     catch (...)
     {
-        QMessageBox::critical(this, "Export report failed", "Report loading failed");
+        QMessageBox::critical(this, tr("Export report failed"), tr("Report loading failed"));
         close();
     }
 }
@@ -137,7 +137,7 @@ void MdiPDFReport::ReportPrinted(const QString &fileName, bool success)
         if (success)
         {
             QFileDialog fileDialog;
-            QString filePath = fileDialog.getSaveFileName(this, "Save pdf report", QDir::homePath(), "*.pdf");
+            QString filePath = fileDialog.getSaveFileName(this, tr("Save pdf report"), QDir::homePath(), "*.pdf");
             if (!filePath.isEmpty())
             {
                 QFile destination(filePath);
@@ -149,7 +149,7 @@ void MdiPDFReport::ReportPrinted(const QString &fileName, bool success)
 #if PDFWRITER
                 if (eFailure == PDFModifyFooterContext(fileName, filePath))
                 {
-                    QMessageBox::critical(this, "Export report failed", "Report printing failed");
+                    QMessageBox::critical(this, tr("Export report failed"), tr("Report printing failed"));
                     return;
                 }
 #else
@@ -161,7 +161,7 @@ void MdiPDFReport::ReportPrinted(const QString &fileName, bool success)
     }
     catch (...)
     {
-        QMessageBox::critical(this, "Export report failed", "Report printing failed");
+        QMessageBox::critical(this, tr("Export report failed"), tr("Report printing failed"));
     }
 }
 
@@ -233,7 +233,7 @@ EStatusCode MdiPDFReport::PDFModifyFooterContext(const QString& srcFile, const Q
     }
     catch (...)
     {
-        QMessageBox::critical(this, "Export report failed", "Report modify footer failed");
+        QMessageBox::critical(this, tr("Export report failed"), tr("Report modify footer failed"));
     }
     return status;
 }

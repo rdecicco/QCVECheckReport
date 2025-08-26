@@ -74,7 +74,10 @@
     <addaction name="separator"/>
     <addaction name="actionImport_CVE_DB"/>
     <addaction name="separator"/>
+    <addaction name="action_Options"/>
+    <addaction name="separator"/>
     <addaction name="action_Exit"/>
+    <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menu_Help">
     <property name="title">
@@ -127,7 +130,7 @@
    </attribute>
    <widget class="QWidget" name="dockWidgetMenuContents">
     <layout class="QVBoxLayout" name="verticalLayout_5">
-     <item alignment="Qt::Qt::AlignTop">
+     <item alignment="Qt::AlignmentFlag::AlignTop">
       <widget class="QToolBox" name="dockWidgetVerticalToolBox">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -181,7 +184,7 @@
          <string>Menu</string>
         </attribute>
         <layout class="QVBoxLayout" name="verticalLayout_4">
-         <item alignment="Qt::Qt::AlignTop">
+         <item alignment="Qt::AlignmentFlag::AlignTop">
           <widget class="QComboBox" name="comboBoxReports">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -197,7 +200,7 @@
            </property>
           </widget>
          </item>
-         <item alignment="Qt::Qt::AlignTop">
+         <item alignment="Qt::AlignmentFlag::AlignTop">
           <widget class="QGroupBox" name="groupBoxMain">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -215,7 +218,7 @@
             <string>Main</string>
            </property>
            <property name="alignment">
-            <set>Qt::AlignHCenter|Qt::AlignTop</set>
+            <set>Qt::AlignmentFlag::AlignHCenter|Qt::AlignmentFlag::AlignTop</set>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout">
             <item>
@@ -250,7 +253,7 @@
             <string>CVE Report</string>
            </property>
            <property name="alignment">
-            <set>Qt::AlignHCenter|Qt::AlignTop</set>
+            <set>Qt::AlignmentFlag::AlignHCenter|Qt::AlignmentFlag::AlignTop</set>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_2">
             <item>
@@ -291,7 +294,7 @@
            </layout>
           </widget>
          </item>
-         <item alignment="Qt::Qt::AlignTop">
+         <item alignment="Qt::AlignmentFlag::AlignTop">
           <widget class="QGroupBox" name="groupBoxCVEData">
            <property name="minimumSize">
             <size>
@@ -303,7 +306,7 @@
             <string>CVE Data</string>
            </property>
            <property name="alignment">
-            <set>Qt::AlignHCenter|Qt::AlignTop</set>
+            <set>Qt::AlignmentFlag::AlignHCenter|Qt::AlignmentFlag::AlignTop</set>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_3">
             <item>
@@ -335,12 +338,17 @@
   </action>
   <action name="actionImport_CVE_DB">
    <property name="text">
-    <string>Import CVE DB...</string>
+    <string>&amp;Import CVE DB...</string>
    </property>
   </action>
   <action name="actionAbout_QCVECheckReport">
    <property name="text">
     <string>&amp;About QCVECheckReport</string>
+   </property>
+  </action>
+  <action name="action_Options">
+   <property name="text">
+    <string>&amp;Options</string>
    </property>
   </action>
  </widget>

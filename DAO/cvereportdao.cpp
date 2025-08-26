@@ -43,6 +43,7 @@ const AbstractDTO::SharedKey CVEReportDAO::createDTO(AbstractDTO& dto)
                                        .arg(cveReportDTO.getVersion())
                                        .arg(cveReportDTO.getDate().toUTC().toString(Qt::ISODate))
                                        .arg(cveReportDTO.getOwner());
+
     if (!cveReportQuery.exec(cveReportQueryString))
     {
         throw new std::exception();

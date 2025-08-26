@@ -25,13 +25,13 @@
    limitations under the License.
  */
 
-#include "DAO/packagedao.h"
 #include "DTO/abstractdto.h"
+#include "DAO/packagedao.h"
+#include "DTO/packagedto.h"
 #include "DTO/packageproductdto.h"
 #include "DAO/packageproductdao.h"
 #include "qsqlquery.h"
 #include <QFileInfo>
-#include "DTO/packagedto.h"
 
 PackageProductDAO::PackageProductDAO(const QSqlDatabase &database): AbstractDAO(database) {}
 
@@ -85,6 +85,7 @@ bool PackageProductDAO::updateDTO(const AbstractDTO& dto)
 {
     const PackageProductDTO& packageProductDTO = static_cast<const PackageProductDTO&>(dto);
     const PackageProductDTO::PackageProductKey* packageProductKey = static_cast<const PackageProductDTO::PackageProductKey*>(packageProductDTO.getKey().get());
+
     if (packageProductKey)
     {
         const PackageDTO::PackageKey* packageKey = packageProductDTO.getPackage() ? static_cast<const PackageDTO::PackageKey*>(packageProductDTO.getPackage()->getKey().get()) : nullptr;

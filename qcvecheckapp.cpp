@@ -114,7 +114,6 @@ void QCVECheckApp::importCVEReport(QCVECheckApp* parent, const QString& jsonRepo
 
         if (!parent->sqliteDBManager->importJson(jsonReportFileName, parent->jsonCVEReportManager.getJsonDocument()))
         {
-            QMessageBox::critical(nullptr, tr("Import Json Report Error"), tr("Import of CSV Report Failed"));
             return;
         }
 

@@ -52,6 +52,7 @@
 #include <QSqlDriver>
 #include <QSqlResult>
 #include <QSqlQuery>
+#include <iostream>
 
 QSQLiteManager::QSQLiteManager(QObject *parent)
     : QObject{parent}, m(new QMutex())
@@ -77,12 +78,12 @@ bool QSQLiteManager::openConnection()
     {
         if (!sqlDatabase.open())
         {
-            QMessageBox::critical(nullptr, "SQL Database Error", sqlDatabase.lastError().text());
+            QMessageBox::critical(nullptr, tr("SQL Database Error"), sqlDatabase.lastError().text());
             return false;
         }
         if (!sqlDatabase.driver()->open(CVEReportsDBFile))
         {
-            QMessageBox::critical(nullptr, "SQL Database Error", sqlDatabase.lastError().text());
+            QMessageBox::critical(nullptr, tr("SQL Database Error"), sqlDatabase.lastError().text());
             closeConnection();
             return false;
         }
@@ -263,6 +264,8 @@ bool QSQLiteManager::importCVEDb(const QString& CVEDBFileName)
     QSqlDatabase cveDbDatabase;
     try
     {
+        //ATTACH DATABASE filename AS databasename
+
         if (openConnection())
         {
             if (QSqlDatabase::contains(CVEDBFileName))
@@ -280,7 +283,7 @@ bool QSQLiteManager::importCVEDb(const QString& CVEDBFileName)
             }
             if (!cveDbDatabase.driver()->open(CVEDBFileName))
             {
-                QMessageBox::critical(nullptr, "SQL Database Error", sqlDatabase.lastError().text());
+                QMessageBox::critical(nullptr, tr("SQL Database Error"), sqlDatabase.lastError().text());
                 cveDbDatabase.close();
                 closeConnection();
                 return false;
@@ -401,27 +404,37 @@ QString QSQLiteManager::getPackagesQueryString(const QString& reportName, bool s
                                   "FROM NVD NC, Issues I "
                                   "WHERE NC.ID=I.NVDID AND I.PackageID=P.ID ")
                           + (showUnpatchedOnly ? QString("AND I.Status='Unpatched' ") : QString("")) +
-                          QString("AND ((CAST(NC.SCOREV3 AS NUMERIC)>=9.0))) Critical, "
+                          QString("AND ((CAST(NC.SCOREV4 AS NUMERIC)>=9.0) OR "
+                                       "(CAST(NC.SCOREV4 AS NUMERIC)<0.1 AND CAST(NC.SCOREV3 AS NUMERIC)>=9.0) OR "
+                                       "(CAST(NC.SCOREV4 AS NUMERIC)<0.1 AND CAST(NC.SCOREV3 AS NUMERIC)<0.1 AND CAST(NC.SCOREV2 AS NUMERIC)>=9.0))) Critical, "
                                   "(SELECT COUNT(NH.ID) "
                                   "FROM NVD NH, Issues I "
                                   "WHERE NH.ID=I.NVDID AND I.PackageID=P.ID ")
                           + (showUnpatchedOnly ? QString("AND I.Status='Unpatched' ") : QString("")) +
-                          QString("AND CAST(NH.SCOREV3 AS NUMERIC)>=7.0 AND CAST(NH.SCOREV3 AS NUMERIC)<9.0) High, "
+                          QString("AND ((CAST(NH.SCOREV4 AS NUMERIC)>=7.0 AND CAST(NH.SCOREV4 AS NUMERIC)<9.0) OR"
+                                  "     (CAST(NH.SCOREV4 AS NUMERIC)<0.1 AND CAST(NH.SCOREV3 AS NUMERIC)>=7.0 AND CAST(NH.SCOREV3 AS NUMERIC)<9.0) OR"
+                                  "     (CAST(NH.SCOREV4 AS NUMERIC)<0.1 AND CAST(NH.SCOREV3 AS NUMERIC)<0.1 AND CAST(NH.SCOREV2 AS NUMERIC)>=7.0 AND CAST(NH.SCOREV2 AS NUMERIC)<9.0))) High, "
                                   "(SELECT COUNT(NM.ID) "
                                   "FROM NVD NM, Issues I "
                                   "WHERE NM.ID=I.NVDID AND I.PackageID=P.ID ")
                           + (showUnpatchedOnly ? QString("AND I.Status='Unpatched' ") : QString("")) +
-                          QString("AND CAST(NM.SCOREV3 AS NUMERIC)>=4.0 AND CAST(NM.SCOREV3 AS NUMERIC)<7.0) Medium, "
+                          QString("AND ((CAST(NM.SCOREV4 AS NUMERIC)>=4.0 AND CAST(NM.SCOREV4 AS NUMERIC)<7.0) OR"
+                                  "     (CAST(NM.SCOREV4 AS NUMERIC)<0.1 AND CAST(NM.SCOREV3 AS NUMERIC)>=4.0 AND CAST(NM.SCOREV3 AS NUMERIC)<7.0) OR"
+                                  "     (CAST(NM.SCOREV4 AS NUMERIC)<0.1 AND CAST(NM.SCOREV3 AS NUMERIC)<0.1 AND CAST(NM.SCOREV2 AS NUMERIC)>=4.0 AND CAST(NM.SCOREV2 AS NUMERIC)<7.0))) Medium, "
                                   "(SELECT COUNT(NL.ID) "
                                   "FROM NVD NL, Issues I "
                                   "WHERE NL.ID=I.NVDID AND I.PackageID=P.ID ")
                           + (showUnpatchedOnly ? QString("AND I.Status='Unpatched' ") : QString("")) +
-                          QString("AND CAST(NL.SCOREV3 AS NUMERIC)>=0.1 AND CAST(NL.SCOREV3 AS NUMERIC)<4.0) Low, "
+                          QString("AND ((CAST(NL.SCOREV4 AS NUMERIC)>=0.1 AND CAST(NL.SCOREV4 AS NUMERIC)<4.0) OR"
+                                  "     (CAST(NL.SCOREV4 AS NUMERIC)<0.1 AND CAST(NL.SCOREV3 AS NUMERIC)>=0.1 AND CAST(NL.SCOREV3 AS NUMERIC)<4.0) OR"
+                                  "     (CAST(NL.SCOREV4 AS NUMERIC)<0.1 AND CAST(NL.SCOREV3 AS NUMERIC)<0.1 AND CAST(NL.SCOREV2 AS NUMERIC)>=0.1 AND CAST(NL.SCOREV2 AS NUMERIC)<4.0))) Low, "
                                   "(SELECT COUNT(NN.ID) "
                                   "FROM NVD NN, Issues I "
                                   "WHERE NN.ID=I.NVDID AND I.PackageID=P.ID ")
                           + (showUnpatchedOnly ? QString("AND I.Status='Unpatched' ") : QString("")) +
-                          QString("AND CAST(NN.SCOREV3 AS NUMERIC)<0.1) None, "
+                          QString("AND (CAST(NN.SCOREV4 AS NUMERIC)<0.1 AND "
+                                       "CAST(NN.SCOREV3 AS NUMERIC)<0.1 AND "
+                                       "CAST(NN.SCOREV2 AS NUMERIC)<0.1)) None, "
                                   "(SELECT COUNT(NP.ID) "
                                   "FROM NVD NP, Issues I "
                                   "WHERE NP.ID=I.NVDID AND I.PackageID=P.ID "
@@ -457,14 +470,15 @@ QString QSQLiteManager::getPackagesQueryString(const QString& reportName, bool s
 void QSQLiteManager::setPackagesModelQuery(const QString& reportName, bool showUnpatchedOnly, int entries, int page, const QString& filter)
 {
     QMutexLocker locker(m);
-    if (!reportName.isNull() && !reportName.isEmpty())
-    {
+    if (!reportName.isNull() && !reportName.isEmpty())    {
         try
         {
             if (openConnection())
             {
                 QString queryString = getPackagesQueryString(reportName, showUnpatchedOnly, entries, page, filter);
-
+#ifdef QT_DEBUG
+                std::cout << "setPackagesModelQuery: " << std::endl << queryString.toStdString() << std::endl;
+#endif
                 if (packagesModel)
                 {
                     packagesModel->setQuery(queryString, sqlDatabase);
@@ -494,6 +508,9 @@ QList<QVariantList> QSQLiteManager::getPackagesRecords(const QString& reportName
             {
                 QString queryString = getPackagesQueryString(reportName, showUnpatchedOnly, entries, page, filter);
 
+#ifdef QT_DEBUG
+                std::cout << std::endl << "getPackagesRecords: " << std::endl << queryString.toStdString() << std::endl;
+#endif
                 QSqlQuery sqlQuery(sqlDatabase);
 
                 if (sqlQuery.exec(queryString))
@@ -503,7 +520,7 @@ QList<QVariantList> QSQLiteManager::getPackagesRecords(const QString& reportName
                         while(sqlQuery.next())
                         {
                             QVariantList values;
-                            for (int i = 0; i < 13; i++)
+                            for (int i = 0; i < numOfCVEColumns; i++)
                             {
                                 values.push_back(sqlQuery.value(i));
                             }
@@ -537,35 +554,15 @@ qint64 QSQLiteManager::getPackagesRowCount(const QString& reportName, bool showU
             {
                 QString queryString = QString("SELECT COUNT(*) rows "
                                               "FROM "
-                                              "(SELECT P.ID "
-                                              "FROM Packages P, CVEReports C, Issues I "
-                                              "WHERE P.CVEReportID=C.ID AND C.FileName = '%1' "
-                                              "AND I.PackageID = P.ID "
-                                              "AND "
-                                              "((SELECT COUNT(NC.ID) "
-                                              "FROM NVD NC "
-                                              "WHERE NC.ID=I.NVDID "
-                                              "AND CAST(NC.SCOREV3 AS NUMERIC)>=9.0) != 0 "
-                                              "OR (SELECT COUNT(NH.ID) "
-                                              "FROM NVD NH "
-                                              "WHERE NH.ID=I.NVDID "
-                                              "AND CAST(NH.SCOREV3 AS NUMERIC)>=7.0 AND CAST(NH.SCOREV3 AS NUMERIC)<9.0) != 0 "
-                                              "OR (SELECT COUNT(NM.ID) "
-                                              "FROM NVD NM "
-                                              "WHERE NM.ID=I.NVDID "
-                                              "AND CAST(NM.SCOREV3 AS NUMERIC)>=4.0 AND CAST(NM.SCOREV3 AS NUMERIC)<7.0) != 0 "
-                                              "OR (SELECT COUNT(NL.ID) "
-                                              "FROM NVD NL "
-                                              "WHERE NL.ID=I.NVDID "
-                                              "AND CAST(NL.SCOREV3 AS NUMERIC)>=0.1 AND CAST(NL.SCOREV3 AS NUMERIC)<4.0) != 0 "
-                                              "OR (SELECT COUNT(NN.ID) "
-                                              "FROM NVD NN "
-                                              "WHERE NN.ID=I.NVDID "
-                                              "AND CAST(NN.SCOREV3 AS NUMERIC)<0.1) != 0) ").arg(reportName) +
+                                              "(SELECT P.ID FROM Packages P, CVEReports C, Issues I "
+                                              "WHERE P.CVEReportID=C.ID AND C.FileName = '%1' AND I.PackageID = P.ID ")
+                                          .arg(reportName) +
                                       ((showUnpatchedOnly ? QString("AND I.Status='Unpatched' ") : QString(""))) +
                                       ((!filter.isNull() && !filter.isEmpty()) ? QString("AND P.Name LIKE '%%1%' ").arg(filter) : QString("")) +
                                       "GROUP BY P.ID)";
-
+#ifdef QT_DEBUG
+                std::cout << std::endl << "getPackagesRowCount: " << std::endl << queryString.toStdString() << std::endl;
+#endif
                 QSqlQuery sqlQuery(sqlDatabase);
                 if (sqlQuery.exec(queryString))
                 {
@@ -585,9 +582,9 @@ qint64 QSQLiteManager::getPackagesRowCount(const QString& reportName, bool showU
     return result;
 }
 
-QString QSQLiteManager::getCVEsQueryString(const QString& reportName, qint64 packageID, const QString& status, const QString& vector, double startingCVSS3, double endingCVSS3, int entries, int page, const QString& filter)
+QString QSQLiteManager::getCVEsQueryString(const QString& reportName, qint64 packageID, const QString& status, const QString& vector, double startingCVSS4, double endingCVSS4, double startingCVSS3, double endingCVSS3, double startingCVSS2, double endingCVSS2, int entries, int page, const QString& filter)
 {
-    QString queryString = QString("SELECT DISTINCT P.ID PID, P.Name, P.Layer, P.Version, I.ID IID, I.Status, I.NVDID, CAST(N.SCOREV3 AS NUMERIC) CVSS3Score, N.VECTOR Vector, I.Link "
+    QString queryString = QString("SELECT DISTINCT P.ID PID, P.Name, P.Layer, P.Version, I.ID IID, I.Status, I.NVDID, CAST(N.SCOREV4 AS NUMERIC) CVSS4Score, CAST(N.SCOREV3 AS NUMERIC) CVSS3Score, CAST(N.SCOREV2 AS NUMERIC) CVSS2Score, N.VECTOR Vector, I.Link "
                                   "FROM Packages P, CVEReports C, Issues I, NVD N "
                                   "WHERE C.FileName = '%1' "
                                   "AND P.CVEReportID = C.ID "
@@ -609,16 +606,16 @@ QString QSQLiteManager::getCVEsQueryString(const QString& reportName, qint64 pac
         queryString += QString("AND Vector='%1' ").arg(vector);
     }
 
-    queryString += QString("AND CVSS3Score >= %1 ").arg(startingCVSS3);
-
-    queryString += QString("AND CVSS3Score <= %1 ").arg(endingCVSS3);
+    queryString += QString("AND ((CVSS4Score >= %1 AND CVSS4Score <= %2) OR ").arg(startingCVSS4).arg(endingCVSS4);
+    queryString += QString("     (CVSS4Score < 0.1 AND CVSS3Score >= %1 AND CVSS3Score <= %2) OR ").arg(startingCVSS3).arg(endingCVSS3);
+    queryString += QString("     (CVSS4Score < 0.1 AND CVSS3Score < 0.1 AND CVSS2Score >= %1 AND CVSS2Score <= %2)) ").arg(startingCVSS2).arg(endingCVSS2);
 
     if (!filter.isNull() && !filter.isEmpty())
     {
         queryString += QString("AND P.Name LIKE '%%1%' ").arg(filter);
     }
 
-    queryString += "ORDER BY P.Name, P.Layer, I.Status, CVSS3Score ";
+    queryString += "ORDER BY P.Name, P.Layer, I.Status, CVSS4Score DESC, CVSS3Score DESC, CVSS2Score DESC ";
 
     if (entries && page > 0)
     {
@@ -629,7 +626,7 @@ QString QSQLiteManager::getCVEsQueryString(const QString& reportName, qint64 pac
 }
 
 
-void QSQLiteManager::setCVEsModelQuery(const QString& reportName, qint64 packageID, const QString& status, const QString& vector, double startingCVSS3, double endingCVSS3, int entries, int page, const QString& filter)
+void QSQLiteManager::setCVEsModelQuery(const QString& reportName, qint64 packageID, const QString& status, const QString& vector, double startingCVSS4, double endingCVSS4, double startingCVSS3, double endingCVSS3, double startingCVSS2, double endingCVSS2, int entries, int page, const QString& filter)
 {
     QMutexLocker locker(m);
     if (!reportName.isNull() && !reportName.isEmpty())
@@ -638,8 +635,14 @@ void QSQLiteManager::setCVEsModelQuery(const QString& reportName, qint64 package
         {
             if (openConnection())
             {
-                QString queryString = getCVEsQueryString(reportName, packageID, status, vector, startingCVSS3, endingCVSS3, entries, page, filter);
-
+                QString queryString;
+                if (startingCVSS4 != 0 || endingCVSS4 != 0 || startingCVSS3 != 0 || endingCVSS3 != 0 || startingCVSS2 != 0 || endingCVSS2 != 0)
+                    queryString = getCVEsQueryString(reportName, packageID, status, vector, startingCVSS4, endingCVSS4, startingCVSS3, endingCVSS3, startingCVSS2, endingCVSS2, entries, page, filter);
+                else
+                    queryString = getNoneCVEsQueryString(reportName, packageID, status, vector, entries, page, filter);
+#ifdef QT_DEBUG
+                std::cout << std::endl << "setCVEsModelQuery: " << std::endl <<  queryString.toStdString() << std::endl;
+#endif
                 if (cvesModel)
                 {
                     cvesModel->setQuery(queryString, sqlDatabase);
@@ -656,7 +659,7 @@ void QSQLiteManager::setCVEsModelQuery(const QString& reportName, qint64 package
     }
 }
 
-QList<QVariantList> QSQLiteManager::getCVEsRecords(const QString& reportName, qint64 packageID, const QString& status, const QString& vector, double startingCVSS3, double endingCVSS3, int entries, int page, const QString& filter)
+QList<QVariantList> QSQLiteManager::getCVEsRecords(const QString& reportName, qint64 packageID, const QString& status, const QString& vector, double startingCVSS4, double endingCVSS4, double startingCVSS3, double endingCVSS3, double startingCVSS2, double endingCVSS2, int entries, int page, const QString& filter)
 {
     QList<QVariantList> result;
     QMutexLocker locker(m);
@@ -667,10 +670,16 @@ QList<QVariantList> QSQLiteManager::getCVEsRecords(const QString& reportName, qi
         {
             if (openConnection())
             {
-                QString queryString = getCVEsQueryString(reportName, packageID, status, vector, startingCVSS3, endingCVSS3, entries, page, filter);
+                QString queryString;
+                if (startingCVSS4 != 0 || endingCVSS4 != 0 || startingCVSS3 != 0 || endingCVSS3 != 0 || startingCVSS2 != 0 || endingCVSS2 != 0)
+                    queryString = getCVEsQueryString(reportName, packageID, status, vector, startingCVSS4, endingCVSS4, startingCVSS3, endingCVSS3, startingCVSS2, endingCVSS2, entries, page, filter);
+                else
+                    queryString = getNoneCVEsQueryString(reportName, packageID, status, vector, entries, page, filter);
 
                 QSqlQuery sqlQuery(sqlDatabase);
-
+#ifdef QT_DEBUG
+                std::cout << std::endl << "getCVEsRecords: " << std::endl << queryString.toStdString() << std::endl;
+#endif
                 if (sqlQuery.exec(queryString))
                 {
                     if (sqlQuery.isSelect())
@@ -678,7 +687,7 @@ QList<QVariantList> QSQLiteManager::getCVEsRecords(const QString& reportName, qi
                         while(sqlQuery.next())
                         {
                             QVariantList values;
-                            for (int i = 0; i < 10; i++)
+                            for (int i = 0; i < numOfCVEColumns; i++)
                             {
                                 values.push_back(sqlQuery.value(i));
                             }
@@ -699,7 +708,50 @@ QList<QVariantList> QSQLiteManager::getCVEsRecords(const QString& reportName, qi
     return result;
 }
 
-qint64 QSQLiteManager::getCVEsRowCount(const QString& reportName, qint64 packageID, const QString& status, const QString& vector, double startingCVSS3, double endingCVSS3, const QString& filter)
+QString QSQLiteManager::getCVEsRowCountQueryString(const QString& reportName, qint64 packageID, const QString& status, const QString& vector, double startingCVSS4, double endingCVSS4, double startingCVSS3, double endingCVSS3, double startingCVSS2, double endingCVSS2, const QString& filter)
+{
+    QString queryString;
+    if (!reportName.isNull() && !reportName.isEmpty())
+    {
+        queryString = QString("SELECT COUNT(*) rows FROM "
+                                      "(SELECT DISTINCT P.ID PID, P.Name, P.Layer, P.Version, I.ID IID, I.Status, I.NVDID, CAST(N.SCOREV4 AS NUMERIC) CVSS4Score, CAST(N.SCOREV3 AS NUMERIC) CVSS3Score, CAST(N.SCOREV2 AS NUMERIC) CVSS2Score, N.VECTOR Vector, I.Link "
+                                      "FROM Packages P, CVEReports C, Issues I, NVD N "
+                                      "WHERE C.FileName = '%1' "
+                                      "AND P.CVEReportID = C.ID "
+                                      "AND I.PackageID = P.ID "
+                                      "AND I.NVDID = N.ID ").arg(reportName);
+
+        if (packageID)
+        {
+            queryString += QString("AND PID=%1 ").arg(packageID);
+        }
+
+        if (!status.isNull() && !status.isEmpty())
+        {
+            queryString += QString("AND I.Status='%1' ").arg(status);
+        }
+
+        if (!vector.isNull() && !vector.isEmpty())
+        {
+            queryString += QString("AND Vector='%1' ").arg(vector);
+        }
+
+        queryString += QString("AND ((CVSS4Score >= %1 AND CVSS4Score <= %2) OR ").arg(startingCVSS4).arg(endingCVSS4);
+        queryString += QString("     (CVSS4Score < 0.1 AND CVSS3Score >= %1 AND CVSS3Score <= %2) OR ").arg(startingCVSS3).arg(endingCVSS3);
+        queryString += QString("     (CVSS4Score < 0.1 AND CVSS3Score < 0.1 AND CVSS2Score >= %1 AND CVSS2Score <= %2)) ").arg(startingCVSS2).arg(endingCVSS2);
+
+        if (!filter.isNull() && !filter.isEmpty())
+        {
+            queryString += QString("AND P.Name LIKE '%%1%' ").arg(filter);
+        }
+
+        queryString += ")";
+    }
+    return queryString;
+}
+
+
+qint64 QSQLiteManager::getCVEsRowCount(const QString& reportName, qint64 packageID, const QString& status, const QString& vector, double startingCVSS4, double endingCVSS4, double startingCVSS3, double endingCVSS3, double startingCVSS2, double endingCVSS2, const QString& filter)
 {
     qint64 result = 0;
     QMutexLocker locker(m);
@@ -709,39 +761,199 @@ qint64 QSQLiteManager::getCVEsRowCount(const QString& reportName, qint64 package
         {
             if (openConnection())
             {
-                QString queryString = QString("SELECT COUNT(*) rows FROM "
-                                              "(SELECT DISTINCT P.ID PID, P.Name, P.Layer, P.Version, I.ID IID, I.Status, I.NVDID, CAST(N.SCOREV3 AS NUMERIC) CVSS3Score, N.VECTOR Vector, I.Link "
-                                              "FROM Packages P, CVEReports C, Issues I, NVD N "
-                                              "WHERE C.FileName = '%1' "
-                                              "AND P.CVEReportID = C.ID "
-                                              "AND I.PackageID = P.ID "
-                                              "AND I.NVDID = N.ID ").arg(reportName);
-
-                if (packageID)
+                QString queryString;
+                if (startingCVSS4 != 0 || endingCVSS4 != 0 || startingCVSS3 != 0 || endingCVSS3 != 0 || startingCVSS2 != 0 || endingCVSS2 != 0)
+                    queryString = getCVEsRowCountQueryString(reportName, packageID, status, vector, startingCVSS4, endingCVSS4, startingCVSS3, endingCVSS3, startingCVSS2, endingCVSS2, filter);
+                else
+                    queryString = getNoneCVEsRowCountQueryString(reportName, packageID, status, vector, filter);
+#ifdef QT_DEBUG
+                std::cout << std::endl << "getCVEsRowCount: " << std::endl << queryString.toStdString() << std::endl;
+#endif
+                QSqlQuery sqlQuery(sqlDatabase);
+                if (sqlQuery.exec(queryString))
                 {
-                    queryString += QString("AND PID=%1 ").arg(packageID);
+                    if (sqlQuery.next())
+                    {
+                        result = sqlQuery.value("rows").toLongLong();
+                    }
+                }
+                closeConnection();
+            }
+        } catch (...) {
+            closeConnection();
+        }
+    }
+    return result;
+}
+
+void QSQLiteManager::setNoneCVEsModelQuery(const QString& reportName, qint64 packageID, const QString& status, const QString& vector, int entries, int page, const QString& filter)
+{
+    QMutexLocker locker(m);
+    if (!reportName.isNull() && !reportName.isEmpty())
+    {
+        try
+        {
+            if (openConnection())
+            {
+                QString queryString = getNoneCVEsQueryString(reportName, packageID, status, vector, entries, page, filter);
+#ifdef QT_DEBUG
+                std::cout << std::endl << "setNoneCVEsModelQuery: " << std::endl <<  queryString.toStdString() << std::endl;
+#endif
+                if (cvesModel)
+                {
+                    cvesModel->setQuery(queryString, sqlDatabase);
+                    if (cvesModel->lastError().isValid())
+                        qDebug() << cvesModel->lastError();
+                }
+                closeConnection();
+            }
+        }
+        catch (...)
+        {
+            closeConnection();
+        }
+    }
+}
+
+QString QSQLiteManager::getNoneCVEsQueryString(const QString& reportName, qint64 packageID, const QString& status, const QString& vector, int entries, int page, const QString& filter)
+{
+    QString queryString = QString("SELECT DISTINCT P.ID PID, P.Name, P.Layer, P.Version, I.ID IID, I.Status, I.NVDID, CAST(N.SCOREV4 AS NUMERIC) CVSS4Score, CAST(N.SCOREV3 AS NUMERIC) CVSS3Score, CAST(N.SCOREV2 AS NUMERIC) CVSS2Score, N.VECTOR Vector, I.Link "
+                                  "FROM Packages P, CVEReports C, Issues I, NVD N "
+                                  "WHERE C.FileName = '%1' "
+                                  "AND P.CVEReportID = C.ID "
+                                  "AND I.PackageID = P.ID "
+                                  "AND I.NVDID = N.ID ").arg(reportName);
+
+    if (packageID)
+    {
+        queryString += QString("AND PID=%1 ").arg(packageID);
+    }
+
+    if (!status.isNull() && !status.isEmpty())
+    {
+        queryString += QString("AND I.Status='%1' ").arg(status);
+    }
+
+    if (!vector.isNull() && !vector.isEmpty())
+    {
+        queryString += QString("AND Vector='%1' ").arg(vector);
+    }
+
+    queryString += QString("AND CVSS4Score < 0.1 AND CVSS3Score < 0.1 AND CVSS2Score < 0.1 ");
+
+    if (!filter.isNull() && !filter.isEmpty())
+    {
+        queryString += QString("AND P.Name LIKE '%%1%' ").arg(filter);
+    }
+
+    queryString += "ORDER BY P.Name, P.Layer, I.Status";
+
+    if (entries && page > 0)
+    {
+        queryString += QString("LIMIT %1 OFFSET %2 ").arg(entries).arg(entries*(page-1));
+    }
+
+    return queryString;
+}
+
+QList<QVariantList> QSQLiteManager::getNoneCVEsRecords(const QString& reportName, qint64 packageID, const QString& status, const QString& vector, int entries, int page, const QString& filter)
+{
+    QList<QVariantList> result;
+    QMutexLocker locker(m);
+
+    if (!reportName.isNull() && !reportName.isEmpty())
+    {
+        try
+        {
+            if (openConnection())
+            {
+                QString queryString = getNoneCVEsQueryString(reportName, packageID, status, vector, entries, page, filter);
+                QSqlQuery sqlQuery(sqlDatabase);
+#ifdef QT_DEBUG
+                std::cout << std::endl << "getNoneCVEsRecords: " << std::endl << queryString.toStdString() << std::endl;
+#endif
+                if (sqlQuery.exec(queryString))
+                {
+                    if (sqlQuery.isSelect())
+                    {
+                        while(sqlQuery.next())
+                        {
+                            QVariantList values;
+                            for (int i = 0; i < numOfCVEColumns; i++)
+                            {
+                                values.push_back(sqlQuery.value(i));
+                            }
+                            result.push_back(values);
+                        }
+                    }
                 }
 
-                if (!status.isNull() && !status.isEmpty())
-                {
-                    queryString += QString("AND I.Status='%1' ").arg(status);
-                }
+                closeConnection();
+            }
+        }
+        catch (...)
+        {
+            closeConnection();
+        }
+    }
 
-                if (!vector.isNull() && !vector.isEmpty())
-                {
-                    queryString += QString("AND Vector='%1' ").arg(vector);
-                }
+    return result;
+}
 
-                queryString += QString("AND CVSS3Score >= %1 ").arg(startingCVSS3);
-                queryString += QString("AND CVSS3Score <= %1 ").arg(endingCVSS3);
+QString QSQLiteManager::getNoneCVEsRowCountQueryString(const QString& reportName, qint64 packageID, const QString& status, const QString& vector, const QString& filter)
+{
+    QString queryString;
+    if (!reportName.isNull() && !reportName.isEmpty())
+    {
+        queryString = QString("SELECT COUNT(*) rows FROM "
+                              "(SELECT DISTINCT P.ID PID, P.Name, P.Layer, P.Version, I.ID IID, I.Status, I.NVDID, CAST(N.SCOREV4 AS NUMERIC) CVSS4Score, CAST(N.SCOREV3 AS NUMERIC) CVSS3Score, CAST(N.SCOREV2 AS NUMERIC) CVSS2Score, N.VECTOR Vector, I.Link "
+                              "FROM Packages P, CVEReports C, Issues I, NVD N "
+                              "WHERE C.FileName = '%1' "
+                              "AND P.CVEReportID = C.ID "
+                              "AND I.PackageID = P.ID "
+                              "AND I.NVDID = N.ID ").arg(reportName);
 
-                if (!filter.isNull() && !filter.isEmpty())
-                {
-                    queryString += QString("AND P.Name LIKE '%%1%' ").arg(filter);
-                }
+        if (packageID)
+        {
+            queryString += QString("AND PID=%1 ").arg(packageID);
+        }
 
-                queryString += ")";
+        if (!status.isNull() && !status.isEmpty())
+        {
+            queryString += QString("AND I.Status='%1' ").arg(status);
+        }
 
+        if (!vector.isNull() && !vector.isEmpty())
+        {
+            queryString += QString("AND Vector='%1' ").arg(vector);
+        }
+
+        queryString += QString("AND CVSS4Score < 0.1 AND CVSS3Score < 0.1 AND CVSS2Score < 0.1 ");
+
+        if (!filter.isNull() && !filter.isEmpty())
+        {
+            queryString += QString("AND P.Name LIKE '%%1%' ").arg(filter);
+        }
+
+        queryString += ")";
+    }
+    return queryString;
+}
+
+qint64 QSQLiteManager::getNoneCVEsRowCount(const QString& reportName, qint64 packageID, const QString& status, const QString& vector, const QString& filter)
+{
+    qint64 result = 0;
+    QMutexLocker locker(m);
+    if (!reportName.isNull() && !reportName.isEmpty())
+    {
+        try
+        {
+            if (openConnection())
+            {
+                QString queryString = getNoneCVEsRowCountQueryString(reportName, packageID, status, vector, filter);
+#ifdef QT_DEBUG
+                std::cout << std::endl << "getNoneCVEsRowCount: " << std::endl << queryString.toStdString() << std::endl;
+#endif
                 QSqlQuery sqlQuery(sqlDatabase);
                 if (sqlQuery.exec(queryString))
                 {
@@ -761,7 +973,7 @@ qint64 QSQLiteManager::getCVEsRowCount(const QString& reportName, qint64 package
 
 QString QSQLiteManager::getIgnoredCVEsQueryString(const QString& reportName, int entries, int page, const QString &filter)
 {
-    QString queryString = QString("SELECT DISTINCT P.ID PID, P.Name, P.Layer, P.Version, I.ID IID, I.Status, I.NVDID, CAST(N.SCOREV3 AS NUMERIC) CVSS3Score, N.VECTOR Vector, I.Link "
+    QString queryString = QString("SELECT DISTINCT P.ID PID, P.Name, P.Layer, P.Version, I.ID IID, I.Status, I.NVDID, CAST(N.SCOREV4 AS NUMERIC) CVSS4Score, CAST(N.SCOREV3 AS NUMERIC) CVSS3Score, CAST(N.SCOREV2 AS NUMERIC) CVSS2Score, N.VECTOR Vector, I.Link "
                                   "FROM Packages P, CVEReports C, Issues I, NVD N "
                                   "WHERE C.FileName = '%1' "
                                   "AND P.CVEReportID = C.ID "
@@ -770,7 +982,7 @@ QString QSQLiteManager::getIgnoredCVEsQueryString(const QString& reportName, int
                                   "AND I.Status='Ignored' ").arg(reportName) +
                           ((!filter.isNull() && !filter.isEmpty()) ? QString("AND P.Name LIKE '%%1%' ").arg(filter) : QString(" "));
 
-    queryString += QString("ORDER BY P.Name, P.Layer, I.Status, CVSS3Score DESC ");
+    queryString += QString("ORDER BY P.Name, P.Layer, I.Status, CVSS4Score, CVSS3Score, CVSS2Score DESC ");
 
     if (entries && page > 0)
     {
@@ -790,7 +1002,9 @@ void QSQLiteManager::setIgnoredCVEsModelQuery(const QString& reportName, int ent
             if (openConnection())
             {
                 QString queryString = getIgnoredCVEsQueryString(reportName, entries, page, filter);
-
+#ifdef QT_DEBUG
+                std::cout << std::endl << "setIgnoredCVEsModelQuery: " << std::endl << queryString.toStdString() << std::endl;
+#endif
                 if (ignoredCVEsModel)
                 {
                     ignoredCVEsModel->setQuery(queryString, sqlDatabase);
@@ -817,9 +1031,10 @@ QList<QVariantList> QSQLiteManager::getIgnoredCVEsRecords(const QString& reportN
             if (openConnection())
             {
                 QString queryString = getIgnoredCVEsQueryString(reportName, entries, page, filter);
-
+#ifdef QT_DEBUG
+                std::cout << std::endl << "getIgnoredCVEsRecords: " << std::endl << queryString.toStdString() << std::endl;
+#endif
                 QSqlQuery sqlQuery(sqlDatabase);
-
                 if (sqlQuery.exec(queryString))
                 {
                     if (sqlQuery.isSelect())
@@ -827,7 +1042,7 @@ QList<QVariantList> QSQLiteManager::getIgnoredCVEsRecords(const QString& reportN
                         while(sqlQuery.next())
                         {
                             QVariantList values;
-                            for (int i = 0; i < 10; i++)
+                            for (int i = 0; i < numOfCVEColumns; i++)
                             {
                                 values.push_back(sqlQuery.value(i));
                             }
@@ -859,7 +1074,7 @@ qint64 QSQLiteManager::getIgnoredCVEsRowCount(const QString &reportName, const Q
             if (openConnection())
             {
                 QString queryString = QString("SELECT COUNT(*) rows FROM "
-                                              "(SELECT DISTINCT P.ID PID, P.Name, P.Layer, P.Version, I.ID IID, I.Status, I.NVDID, CAST(N.SCOREV3 AS NUMERIC) CVSS3Score, N.VECTOR Vector, I.Link "
+                                              "(SELECT DISTINCT P.ID PID, P.Name, P.Layer, P.Version, I.ID IID, I.Status, I.NVDID, CAST(N.SCOREV4 AS NUMERIC) CVSS4Score, CAST(N.SCOREV3 AS NUMERIC) CVSS3Score, CAST(N.SCOREV2 AS NUMERIC) CVSS2Score, N.VECTOR Vector, I.Link "
                                               "FROM Packages P, CVEReports C, Issues I, NVD N "
                                               "WHERE C.FileName = '%1' "
                                               "AND P.CVEReportID = C.ID "
@@ -867,7 +1082,9 @@ qint64 QSQLiteManager::getIgnoredCVEsRowCount(const QString &reportName, const Q
                                               "AND I.NVDID = N.ID "
                                               "AND I.Status='Ignored' ").arg(reportName) +
                                       ((!filter.isNull() && !filter.isEmpty()) ? QString("AND P.Name LIKE '%%1%' )").arg(filter) : QString(")"));
-
+#ifdef QT_DEBUG
+                std::cout << std::endl << "getIgnoredCVEsRowCount: " << std::endl << queryString.toStdString() << std::endl;
+#endif
                 QSqlQuery sqlQuery(sqlDatabase);
                 if (sqlQuery.exec(queryString))
                 {
@@ -887,26 +1104,50 @@ qint64 QSQLiteManager::getIgnoredCVEsRowCount(const QString &reportName, const Q
 
 
 
-void QSQLiteManager::setNVDDataNVDsModelQuery(const QString& product, const QString& vector, double cvss3score, int entries, int page, const QString& filter)
+void QSQLiteManager::setNVDDataNVDsModelQuery(const QString& product, const QString& vector, double cvss4score, double cvss3score, double cvss2score , int entries, int page, const QString& filter)
 {
     QMutexLocker locker(m);
     try
     {
         if (openConnection())
         {
-            QString queryString = QString("SELECT DISTINCT N.ID, N.SUMMARY, N.SCOREV2, N.SCOREV3, N.MODIFIED, N.VECTOR "
+            QString queryString = QString("SELECT DISTINCT N.ID, N.SUMMARY, N.SCOREV3, N.SCOREV2, N.MODIFIED, N.VECTOR "
                                           "FROM NVD N, PRODUCTS P "
                                           "WHERE N.ID = P.ID "
-                                          "AND CAST(N.SCOREV3 AS NUMERIC) > %1 ").arg(cvss3score);
+                                          "AND "
+                                          "((CAST(N.SCOREV3 AS NUMERIC) > %1) OR "
+                                          " (CAST(N.SCOREV3 AS NUMERIC) < 0.1 AND CAST(N.SCOREV2 AS NUMERIC) > %2)) ")
+                .arg(cvss3score)
+                .arg(cvss2score);
 
             bool existVectorString = AbstractDAO::fieldExist(sqlDatabase, "NVD", "VECTORSTRING");
 
             if (existVectorString)
             {
-                queryString = QString("SELECT DISTINCT N.ID, N.SUMMARY, N.SCOREV2, N.SCOREV3, N.MODIFIED, N.VECTOR, N.VECTORSTRING "
+                queryString = QString("SELECT DISTINCT N.ID, N.SUMMARY, N.SCOREV3, N.SCOREV2, N.MODIFIED, N.VECTOR, N.VECTORSTRING "
                                       "FROM NVD N, PRODUCTS P "
                                       "WHERE N.ID = P.ID "
-                                      "AND CAST(N.SCOREV3 AS NUMERIC) > %1 ").arg(cvss3score);
+                                      "AND "
+                                      "((CAST(N.SCOREV3 AS NUMERIC) > %1) OR "
+                                      " (CAST(N.SCOREV3 AS NUMERIC) < 0.1 AND CAST(N.SCOREV2 AS NUMERIC) > %2)) ")
+                                  .arg(cvss3score)
+                                  .arg(cvss2score);
+            }
+
+            bool existScoreV4 = AbstractDAO::fieldExist(sqlDatabase, "NVD", "SCOREV4");
+
+            if (existScoreV4)
+            {
+                queryString = QString("SELECT DISTINCT N.ID, N.SUMMARY, N.SCOREV4, N.SCOREV3, N.SCOREV2, N.MODIFIED, N.VECTOR, N.VECTORSTRING "
+                                      "FROM NVD N, PRODUCTS P "
+                                      "WHERE N.ID = P.ID "
+                                      "AND "
+                                      "((CAST(N.SCOREV4 AS NUMERIC) > %1) OR "
+                                      " (CAST(N.SCOREV4 AS NUMERIC) < 0.1 AND CAST(N.SCOREV3 AS NUMERIC) > %2) OR "
+                                      " (CAST(N.SCOREV4 AS NUMERIC) < 0.1 AND CAST(N.SCOREV3 AS NUMERIC) < 0.1 AND CAST(N.SCOREV2 AS NUMERIC) > %3)) ")
+                                  .arg(cvss4score)
+                                  .arg(cvss3score)
+                                  .arg(cvss2score);
             }
 
             if (!product.isNull() && !product.isEmpty())
@@ -930,7 +1171,9 @@ void QSQLiteManager::setNVDDataNVDsModelQuery(const QString& product, const QStr
             {
                 queryString += QString("LIMIT %1 OFFSET %2 ").arg(entries).arg(entries*(page-1));
             }
-
+#ifdef QT_DEBUG
+            std::cout << std::endl << "setNVDDataNVDsModelQuery: " << std::endl << queryString.toStdString() << std::endl;
+#endif
             if (nvdDataNVDsModel)
             {
                 nvdDataNVDsModel->setQuery(queryString, sqlDatabase);
@@ -945,7 +1188,7 @@ void QSQLiteManager::setNVDDataNVDsModelQuery(const QString& product, const QStr
     }
 }
 
-qint64 QSQLiteManager::getNVDDataNVDsRowCount(const QString& product, const QString& vector, double cvss3score, const QString& filter)
+qint64 QSQLiteManager::getNVDDataNVDsRowCount(const QString& product, const QString& vector, double cvss4score, double cvss3score, double cvss2score, const QString& filter)
 {
     qint64 result = 0;
     QMutexLocker locker(m);
@@ -954,18 +1197,44 @@ qint64 QSQLiteManager::getNVDDataNVDsRowCount(const QString& product, const QStr
         if (openConnection())
         {
             QString queryString = QString("SELECT COUNT(*) rows FROM "
-                                          "(SELECT DISTINCT N.ID, N.SUMMARY, N.SCOREV2, N.SCOREV3, N.MODIFIED, N.VECTOR  "
+                                          "(SELECT DISTINCT N.ID, N.SUMMARY, N.SCOREV3, N.SCOREV2, N.MODIFIED, N.VECTOR  "
                                           "FROM NVD N, PRODUCTS P "
-                                          "WHERE P.ID = N.ID AND CAST(N.SCOREV3 AS NUMERIC) > %1 ").arg(cvss3score);
+                                          "WHERE P.ID = N.ID "
+                                          "AND "
+                                          "((CAST(N.SCOREV3 AS NUMERIC) > %1) OR "
+                                          " (CAST(N.SCOREV3 AS NUMERIC) < 0.1 AND CAST(N.SCOREV2 AS NUMERIC) > %2)) ")
+                                      .arg(cvss3score)
+                                      .arg(cvss2score);
 
             bool existVectorString = AbstractDAO::fieldExist(sqlDatabase, "NVD", "VECTORSTRING");
 
             if (existVectorString)
             {
-                QString queryString = QString("SELECT COUNT(*) rows FROM "
-                                              "(SELECT DISTINCT N.ID, N.SUMMARY, N.SCOREV2, N.SCOREV3, N.MODIFIED, N.VECTOR, N.VECTORSTRING "
-                                              "FROM NVD N, PRODUCTS P "
-                                              "WHERE P.ID = N.ID AND CAST(N.SCOREV3 AS NUMERIC) > %1 ").arg(cvss3score);
+                queryString = QString("SELECT COUNT(*) rows FROM "
+                                      "(SELECT DISTINCT N.ID, N.SUMMARY, N.SCOREV3, N.SCOREV2, N.MODIFIED, N.VECTOR, N.VECTORSTRING "
+                                      "FROM NVD N, PRODUCTS P "
+                                      "WHERE P.ID = N.ID "
+                                      "AND "
+                                      "((CAST(N.SCOREV3 AS NUMERIC) > %1) OR "
+                                      " (CAST(N.SCOREV3 AS NUMERIC) < 0.1 AND CAST(N.SCOREV2 AS NUMERIC) > %2)) ")
+                                    .arg(cvss3score)
+                                    .arg(cvss2score);
+            }
+
+            bool existScoreV4 = AbstractDAO::fieldExist(sqlDatabase, "NVD", "SCOREV4");
+
+            if (existScoreV4)
+            {
+                queryString = QString("SELECT COUNT(*) rows FROM "
+                                      "(SELECT DISTINCT N.ID, N.SUMMARY, N.SCOREV4, N.SCOREV3, N.SCOREV2, N.MODIFIED, N.VECTOR, N.VECTORSTRING "
+                                      "FROM NVD N, PRODUCTS P "
+                                      "WHERE P.ID = N.ID "
+                                      "AND ((CAST(N.SCOREV4 AS NUMERIC) > %1) OR "
+                                      "     (CAST(N.SCOREV4 AS NUMERIC) < 0.1 AND CAST(N.SCOREV3 AS NUMERIC) > %2) OR "
+                                      "     (CAST(N.SCOREV4 AS NUMERIC) < 0.1 AND CAST(N.SCOREV3 AS NUMERIC) < 0.1 AND CAST(N.SCOREV2 AS NUMERIC) > %3)) ")
+                                  .arg(cvss4score)
+                                  .arg(cvss3score)
+                                  .arg(cvss2score);
             }
 
             if (!product.isNull() && !product.isEmpty())
@@ -980,11 +1249,13 @@ qint64 QSQLiteManager::getNVDDataNVDsRowCount(const QString& product, const QStr
 
             if (!filter.isNull() && !filter.isEmpty())
             {
-                queryString += QString("AND (N.ID LIKE '%%1%' OR N.SUMMARY LIKE '%%1%') ").arg(filter);
+                queryString += QString("AND (N.ID LIKE '%1' OR N.SUMMARY LIKE '%1') ").arg(filter);
             }
 
             queryString += ")";
-
+#ifdef QT_DEBUG
+            std::cout << std::endl << "getNVDDataNVDsRowCount: " << std::endl << queryString.toStdString() << std::endl;
+#endif
             QSqlQuery sqlQuery(sqlDatabase);
             if (sqlQuery.exec(queryString))
             {
@@ -1023,7 +1294,9 @@ void QSQLiteManager::setNVDDataProductsModelQuery(const QString& productID, int 
             {
                 queryString += QString("LIMIT %1 OFFSET %2").arg(entries).arg(entries*(page-1));
             }
-
+#ifdef QT_DEBUG
+            std::cout << std::endl << "setNVDDataProductsModelQuery: " << std::endl << queryString.toStdString() << std::endl;
+#endif
             if (nvdDataProductsModel)
             {
                 nvdDataProductsModel->setQuery(queryString, sqlDatabase);
@@ -1058,7 +1331,9 @@ qint64 QSQLiteManager::getNVDDataProductsRowCount(const QString& productID, cons
             }
 
             queryString += QString("ORDER BY VENDOR, PRODUCT, VERSION_START, VERSION_END) ");
-
+#ifdef QT_DEBUG
+            std::cout << std::endl << "getNVDDataProductsRowCount: " << std::endl << queryString.toStdString() << std::endl;
+#endif
             QSqlQuery sqlQuery(sqlDatabase);
             if (sqlQuery.exec(queryString))
             {

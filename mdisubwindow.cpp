@@ -50,9 +50,11 @@
 #define CVEsIssueIDColumnIndex 4
 #define CVEsIssueStatusColumnIndex 5
 #define CVEsIssueNVDIDColumnIndex 6
-#define CVEsNVDCVSS3ScoreColumnIndex 7
-#define CVEsNVDVectorColumnIndex 8
-#define CVEsLinkColumnIndex 9
+#define CVEsNVDCVSS4ScoreColumnIndex 7
+#define CVEsNVDCVSS3ScoreColumnIndex 8
+#define CVEsNVDCVSS2ScoreColumnIndex 9
+#define CVEsNVDVectorColumnIndex 10
+#define CVEsLinkColumnIndex 11
 #define IgnoredCVEsPackageIDColumnIndex 0
 #define IgnoredCVEsPackageNameColumnIndex 1
 #define IgnoredCVEsPackageLayerColumnIndex 2
@@ -60,16 +62,18 @@
 #define IgnoredCVEsIssueIDColumnIndex 4
 #define IgnoredCVEsIssueStatusColumnIndex 5
 #define IgnoredCVEsIssueNVDIDColumnIndex 6
-#define IgnoredCVEsNVDCVSS3ScoreColumnIndex 7
-#define IgnoredCVEsNVDVectorColumnIndex 8
-#define IgnoredCVEsLinkColumnIndex 9
+#define IgnoredCVEsNVDCVSS4ScoreColumnIndex 7
+#define IgnoredCVEsNVDCVSS3ScoreColumnIndex 8
+#define IgnoredCVEsNVDCVSS2ScoreColumnIndex 9
+#define IgnoredCVEsNVDVectorColumnIndex 10
+#define IgnoredCVEsLinkColumnIndex 11
 
 #define NameWidth 180
 #define LayerWidth 180
 #define VersionWidth 220
 #define StatusWidth 120
 #define NVDIDWidth 150
-#define CVSS3ScoreWidth 100
+#define CVSSScoreWidth 100
 #define VectorWidth 180
 
 MdiSubWindow::MdiSubWindow(const QString &fileName, QSQLiteManager* sqlManager, QWidget *parent):
@@ -212,7 +216,7 @@ void MdiSubWindow::resizeCVEsTableView()
         int columnCount = cvesTableView->getModel()->columnCount();
         cvesTableView->horizontalHeader()->setDefaultSectionSize(cvesTableView->width() / (columnCount - 2) - 2);
         cvesTableView->horizontalHeader()->setDefaultAlignment(Qt::AlignCenter);
-        int widths[CVEsLinkColumnIndex] = { 0, NameWidth, LayerWidth, VersionWidth, 0, StatusWidth, NVDIDWidth, CVSS3ScoreWidth, VectorWidth};
+        int widths[CVEsLinkColumnIndex] = { 0, NameWidth, LayerWidth, VersionWidth, 0, StatusWidth, NVDIDWidth, CVSSScoreWidth, CVSSScoreWidth, CVSSScoreWidth, VectorWidth};
         for (int i = 0; i < CVEsLinkColumnIndex; i++)
         {
             cvesTableView->setColumnWidth(i, widths[i]);
@@ -228,7 +232,7 @@ void MdiSubWindow::resizeIgnoredCVEsTableView()
         int columnCount = ignoredCVEsTableView->getModel()->columnCount();
         ignoredCVEsTableView->horizontalHeader()->setDefaultSectionSize(ignoredCVEsTableView->width()  / (columnCount - 2) - 2);
         ignoredCVEsTableView->horizontalHeader()->setDefaultAlignment(Qt::AlignCenter);
-        int widths[IgnoredCVEsLinkColumnIndex] = { 0, NameWidth, LayerWidth, VersionWidth, 0, StatusWidth, NVDIDWidth, CVSS3ScoreWidth, VectorWidth};
+        int widths[IgnoredCVEsLinkColumnIndex] = { 0, NameWidth, LayerWidth, VersionWidth, 0, StatusWidth, NVDIDWidth, CVSSScoreWidth, CVSSScoreWidth, CVSSScoreWidth, VectorWidth};
         for (int i = 0; i < IgnoredCVEsLinkColumnIndex; i++)
         {
             ignoredCVEsTableView->setColumnWidth(i, widths[i]);
@@ -594,12 +598,12 @@ void MdiSubWindow::selectCVEs(QMutex* cvesTableMutex, ReportData* reportData, Ui
         qint64 packageID = ui->comboBoxCVEsPackages->currentData().toLongLong();
         QString status = ui->comboBoxCVEsStatus->currentData().toString();
         QString vector = ui->comboBoxCVEsAttackVector->currentData().toString();
-        double cvss3score = ui->comboBoxCVEsMinimumCVSS->currentData().toDouble();
+        double cvssscore = ui->comboBoxCVEsMinimumCVSS->currentData().toDouble();
         QString filter = search ? ui->lineEditSearchCVEs->text() : QString("");
-        qint64 totalNumOfCVEs = reportData->selectCVEsRowCount(packageID, status,  vector, cvss3score, 10, filter);
+        qint64 totalNumOfCVEs = reportData->selectCVEsRowCount(packageID, status,  vector, cvssscore, 10, cvssscore, 10, cvssscore, 10, filter);
         ui->spinBoxCVEsPage->setMinimum(1);
         int pages = numOfCVEsToShow ? totalNumOfCVEs / numOfCVEsToShow + (totalNumOfCVEs % numOfCVEsToShow ? 1 : 0) : 1;
-        reportData->selectCVEs(packageID, status,  vector, cvss3score, 10, numOfCVEsToShow, page, filter);
+        reportData->selectCVEs(packageID, status,  vector, cvssscore, 10, cvssscore, 10, cvssscore, 10, numOfCVEsToShow, page, filter);
         if (reportData->getCVEs())
         {
             int startingRow = numOfCVEsToShow * (page - 1) + 1;

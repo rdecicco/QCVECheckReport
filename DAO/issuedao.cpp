@@ -144,10 +144,10 @@ AbstractDTO::SharedIntMap IssueDAO::getIssues(const AbstractDTO::SharedDTO& pack
     const PackageDTO::PackageKey& packageKey = static_cast<const PackageDTO::PackageKey&>(*package->getKey());
 
     QSqlQuery issueQuery(sqlDatabase);
-    QString issueString = QString("SELECT ID, Status, Link, PackageID, NVDID FROM Issues WHERE PackageID = %1")
+    QString issueQueryString = QString("SELECT ID, Status, Link, PackageID, NVDID FROM Issues WHERE PackageID = %1")
                               .arg(packageKey.getID());
 
-    if (!issueQuery.exec(issueString))
+    if (!issueQuery.exec(issueQueryString))
     {
         throw new std::exception();
     }

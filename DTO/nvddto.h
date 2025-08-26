@@ -66,6 +66,7 @@ protected:
     QString Summary;
     QString ScoreV2;
     QString ScoreV3;
+    QString ScoreV4;
     QDateTime Modified;
     QString Vector;
     QString VectorString;
@@ -78,6 +79,8 @@ public:
     void setScoreV2(const QString& scoreV2) { ScoreV2 = std::move(scoreV2); };
     QString getScoreV3() const { return ScoreV3; };
     void setScoreV3(const QString& scoreV3) { ScoreV3 = std::move(scoreV3); };
+    QString getScoreV4() const { return ScoreV4; };
+    void setScoreV4(const QString& scoreV4) { ScoreV4 = std::move(scoreV4); };
     QDateTime getModified() const { return Modified; };
     void setModified(const QDateTime& modified) { Modified = modified; };
     QString getVector() const { return Vector; };

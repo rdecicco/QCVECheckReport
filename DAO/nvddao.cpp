@@ -32,6 +32,7 @@
 #include "DTO/issuedto.h"
 #include "qsqlquery.h"
 #include <QFileInfo>
+#include <iostream>
 
 NVDDAO::NVDDAO(const QSqlDatabase& database): AbstractDAO(database) {}
 
@@ -60,6 +61,19 @@ const AbstractDTO::SharedKey NVDDAO::createDTO(AbstractDTO& dto)
                                  .arg(nvdDTO.getModified().isNull() ? QDateTime().toUTC().toString(Qt::ISODate) : nvdDTO.getModified().toUTC().toString(Qt::ISODate))
                                  .arg(nvdDTO.getVector())
                                  .arg(nvdDTO.getVectorString());
+        }
+
+        if (fieldExist(sqlDatabase, "NVD", "SCOREV4"))
+        {
+            nvdQueryString = QString("INSERT INTO NVD (ID, SUMMARY, SCOREV2, SCOREV3, SCOREV4, MODIFIED, VECTOR, VECTORSTRING) VALUES ( '%1', '%2', '%3', '%4', '%5', '%6', '%7', '%8')")
+            .arg(nvdKey->getID())
+                .arg(nvdDTO.getSummary().isNull() ? QString("") : nvdDTO.getSummary().replace("'", "''").replace("%", "&#37;"))
+                .arg(nvdDTO.getScoreV2().isNull() ? "0.0" : nvdDTO.getScoreV2())
+                .arg(nvdDTO.getScoreV3().isNull() ? "0.0" : nvdDTO.getScoreV3())
+                .arg(nvdDTO.getScoreV4().isNull() ? "0.0" : nvdDTO.getScoreV4())
+                .arg(nvdDTO.getModified().isNull() ? QDateTime().toUTC().toString(Qt::ISODate) : nvdDTO.getModified().toUTC().toString(Qt::ISODate))
+                .arg(nvdDTO.getVector())
+                .arg(nvdDTO.getVectorString());
         }
 
         nvdQueryString.replace("&#37;", "%");
@@ -93,6 +107,14 @@ AbstractDTO::SharedDTO NVDDAO::readDTO(const AbstractDTO::SharedKey &id)
                                  .arg(nvdKey->getID());
         }
 
+        bool existScoreV4 = fieldExist(sqlDatabase, "NVD", "SCOREV4");
+
+        if (existScoreV4)
+        {
+            nvdQueryString = QString("SELECT SUMMARY, SCOREV2, SCOREV3, SCOREV4, MODIFIED, VECTOR, VECTORSTRING FROM NVD WHERE ID = '%1'")
+            .arg(nvdKey->getID());
+        }
+
         if (!nvdQuery.exec(nvdQueryString))
         {
             throw new std::exception();
@@ -109,6 +131,10 @@ AbstractDTO::SharedDTO NVDDAO::readDTO(const AbstractDTO::SharedKey &id)
             if (existVectorString)
             {
                 nvdDTO->setVectorString(nvdQuery.value("VECTORSTRING").toString());
+            }
+            if (existScoreV4)
+            {
+                nvdDTO->setScoreV4(nvdQuery.value("SCOREV4").toString());
             }
             return nvdDTO;
         }
@@ -144,6 +170,21 @@ bool NVDDAO::updateDTO(const AbstractDTO& dto)
                                  .arg(nvdDTO.getVector())
                                  .arg(nvdDTO.getVectorString())
                                  .arg(nvdKey->getID());
+        }
+
+        bool existScoreV4 = fieldExist(sqlDatabase, "NVD", "SCOREV4");
+
+        if (existScoreV4)
+        {
+            nvdQueryString = QString("UPDATE NVD SET SUMMARY = '%1', SCOREV2 = '%2', SCOREV3 = '%3', SCOREV4 = '%4', MODIFIED = '%5', VECTOR = '%6', VECTORSTRING = '%7' WHERE ID = '%8' AND MODIFIED <= '%5'")
+            .arg(nvdDTO.getSummary().isNull() ? QString("") : nvdDTO.getSummary().replace("'", "''").replace("%", "&#37;"))
+                .arg(nvdDTO.getScoreV2().isNull() ? "0.0" : nvdDTO.getScoreV2())
+                .arg(nvdDTO.getScoreV3().isNull() ? "0.0" : nvdDTO.getScoreV3())
+                .arg(nvdDTO.getScoreV4().isNull() ? "0.0" : nvdDTO.getScoreV4())
+                .arg(nvdDTO.getModified().isNull() ? QDateTime().toUTC().toString(Qt::ISODate) : nvdDTO.getModified().toUTC().toString(Qt::ISODate))
+                .arg(nvdDTO.getVector())
+                .arg(nvdDTO.getVectorString())
+                .arg(nvdKey->getID());
         }
 
         nvdQueryString.replace("&#37;", "%");
@@ -195,6 +236,13 @@ QList<NVDDTO> NVDDAO::getAllNVDs()
         nvdQueryString = QString("SELECT ID, SUMMARY, SCOREV2, SCOREV3, MODIFIED, VECTOR, VECTORSTRING FROM NVD");
     }
 
+    bool existScoreV4 = fieldExist(sqlDatabase, "NVD", "SCOREV4");
+
+    if (existScoreV4)
+    {
+        nvdQueryString = QString("SELECT ID, SUMMARY, SCOREV2, SCOREV3, SCOREV4, MODIFIED, VECTOR, VECTORSTRING FROM NVD");
+    }
+
     if (nvdQuery.exec(nvdQueryString))
     {
         if (nvdQuery.isSelect())
@@ -212,6 +260,11 @@ QList<NVDDTO> NVDDAO::getAllNVDs()
                 if (existVectorString)
                 {
                     nvdDTO.setVectorString(nvdQuery.value("VECTORSTRING").toString());
+                }
+
+                if (existScoreV4)
+                {
+                    nvdDTO.setScoreV4(nvdQuery.value("SCOREV4").toString());
                 }
 
                 result.push_back(nvdDTO);
@@ -238,6 +291,13 @@ AbstractDTO::SharedDTO NVDDAO::getNVD(const AbstractDTO::SharedDTO& issue)
                              .arg(issueKey.getID());
     }
 
+    bool existScoreV4 = fieldExist(sqlDatabase, "NVD", "SCOREV4");
+
+    if (existScoreV4)
+    {
+        nvdQueryString = QString("SELECT ID, SUMMARY, SCOREV2, SCOREV3, SCOREV4, MODIFIED, VECTOR, VECTORSTRING FROM NVD WHERE ID = '%1'");
+    }
+
     if (!nvdQuery.exec(nvdQueryString))
     {
         throw new std::exception();
@@ -254,6 +314,10 @@ AbstractDTO::SharedDTO NVDDAO::getNVD(const AbstractDTO::SharedDTO& issue)
         if (existVectorString)
         {
             nvdDTO->setVectorString(nvdQuery.value("VECTORSTRING").toString());
+        }
+        if (existScoreV4)
+        {
+            nvdDTO->setScoreV4(nvdQuery.value("SCOREV4").toString());
         }
         ProductDAO productDAO(sqlDatabase);
         nvdDTO->setProducts(productDAO.getProducts(nvdDTO));

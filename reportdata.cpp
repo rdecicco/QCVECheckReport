@@ -32,6 +32,8 @@
 #include "DTO/packagedto.h"
 #include "qsqlitemanager.h"
 #include <QMessageBox>
+#include <fstream>
+#include <qfileinfo.h>
 
 ReportData::ReportData(const QString reportFile, QSQLiteManager *sqlManager, QObject *parent)
     : QObject{parent}, reportName(reportFile), sqliteManager(sqlManager)
@@ -52,7 +54,7 @@ void ReportData::LoadReportData()
             fullCVEReport = sqliteManager->getFullCVEReport(reportName);
             if (!CalculateSummary())
             {
-                QMessageBox::critical(nullptr, "Summary Error", "Processing of summary failed");
+                QMessageBox::critical(nullptr, tr("Summary Error"), tr("Processing of summary failed"));
             }
             packages = sqliteManager->getPackagesModel();
             cves = sqliteManager->getCVEsModel();
@@ -89,6 +91,7 @@ bool ReportData::CalculateSummary()
                                 {
                                     qint64 CVSS2Score = nvdDTO->getScoreV2().remove('.').toLongLong();
                                     qint64 CVSS3Score  = nvdDTO->getScoreV3().remove('.').toLongLong();
+                                    qint64 CVSS4Score  = nvdDTO->getScoreV4().remove('.').toLongLong();
 
                                     QString status = issueDTO->getStatus();
                                     if (status == "Patched")
@@ -99,7 +102,27 @@ bool ReportData::CalculateSummary()
                                     {
                                         summary.packagesWithKnowenCVS.Unpatched++;
 
-                                        if (CVSS3Score >= 90)
+                                        if (CVSS4Score >= 90)
+                                        {
+                                            summary.unpatchedCVEBySeverity.Critical++;
+                                        }
+                                        else if (CVSS4Score >= 70 && CVSS4Score < 90)
+                                        {
+                                            summary.unpatchedCVEBySeverity.High++;
+                                        }
+                                        else if (CVSS4Score >= 40 && CVSS4Score < 70)
+                                        {
+                                            summary.unpatchedCVEBySeverity.Medium++;
+                                        }
+                                        else if (CVSS4Score >= 1 && CVSS4Score < 40)
+                                        {
+                                            summary.unpatchedCVEBySeverity.Low++;
+                                        }
+                                        else if (CVSS4Score > 0 && CVSS4Score < 1)
+                                        {
+                                            summary.unpatchedCVEBySeverity.None++;
+                                        }
+                                        else if (CVSS3Score >= 90)
                                         {
                                             summary.unpatchedCVEBySeverity.Critical++;
                                         }
@@ -115,7 +138,23 @@ bool ReportData::CalculateSummary()
                                         {
                                             summary.unpatchedCVEBySeverity.Low++;
                                         }
-                                        else if (CVSS3Score < 1)
+                                        else if (CVSS2Score >= 90)
+                                        {
+                                            summary.unpatchedCVEBySeverity.Critical++;
+                                        }
+                                        else if (CVSS2Score >= 70 && CVSS2Score < 90)
+                                        {
+                                            summary.unpatchedCVEBySeverity.High++;
+                                        }
+                                        else if (CVSS2Score >= 40 && CVSS2Score < 70)
+                                        {
+                                            summary.unpatchedCVEBySeverity.Medium++;
+                                        }
+                                        else if (CVSS2Score >= 1 && CVSS2Score < 40)
+                                        {
+                                            summary.unpatchedCVEBySeverity.Low++;
+                                        }
+                                        else
                                         {
                                             summary.unpatchedCVEBySeverity.None++;
                                         }
@@ -125,7 +164,27 @@ bool ReportData::CalculateSummary()
                                         summary.packagesWithKnowenCVS.Ignored++;
                                     }
 
-                                    if (CVSS3Score >= 90)
+                                    if (CVSS4Score >= 90)
+                                    {
+                                        summary.severitySummary.Critical++;
+                                    }
+                                    else if (CVSS4Score >= 70 && CVSS4Score < 90)
+                                    {
+                                        summary.severitySummary.High++;
+                                    }
+                                    else if (CVSS4Score >= 40 && CVSS4Score < 70)
+                                    {
+                                        summary.severitySummary.Medium++;
+                                    }
+                                    else if (CVSS4Score >= 1 && CVSS4Score < 40)
+                                    {
+                                        summary.severitySummary.Low++;
+                                    }
+                                    else if (CVSS4Score > 0 && CVSS4Score < 1)
+                                    {
+                                        summary.severitySummary.None++;
+                                    }
+                                    else if (CVSS3Score >= 90)
                                     {
                                         summary.severitySummary.Critical++;
                                     }
@@ -141,7 +200,23 @@ bool ReportData::CalculateSummary()
                                     {
                                         summary.severitySummary.Low++;
                                     }
-                                    else if (CVSS3Score < 1)
+                                    else if (CVSS2Score >= 90)
+                                    {
+                                        summary.severitySummary.Critical++;
+                                    }
+                                    else if (CVSS2Score >= 70 && CVSS2Score < 90)
+                                    {
+                                        summary.severitySummary.High++;
+                                    }
+                                    else if (CVSS2Score >= 40 && CVSS2Score < 70)
+                                    {
+                                        summary.severitySummary.Medium++;
+                                    }
+                                    else if (CVSS2Score >= 1 && CVSS2Score < 40)
+                                    {
+                                        summary.severitySummary.Low++;
+                                    }
+                                    else
                                     {
                                         summary.severitySummary.None++;
                                     }
@@ -174,14 +249,29 @@ qint64 ReportData::selectPackagesRowCount(bool showUnpatchedOnly, const QString&
     return sqliteManager->getPackagesRowCount(reportName, showUnpatchedOnly, filter);
 }
 
-void ReportData::selectCVEs(qint64 packageID, const QString& status, const QString& vector, double startingCVSS3, double endingCVSS3, int entries, int page, const QString& filter)
+void ReportData::selectCVEs(qint64 packageID, const QString& status, const QString& vector, double startingCVSS4, double endingCVSS4, double startingCVSS3, double endingCVSS3, double startingCVSS2, double endingCVSS2, int entries, int page, const QString& filter)
 {
-    sqliteManager->setCVEsModelQuery(reportName, packageID,  status, vector, startingCVSS3, endingCVSS3, entries, page, filter);
+    if (startingCVSS4 != 0 || endingCVSS4 != 0 || startingCVSS3 != 0 || endingCVSS3 != 0 || startingCVSS2 != 0 || endingCVSS2 != 0)
+        sqliteManager->setCVEsModelQuery(reportName, packageID,  status, vector, startingCVSS4, endingCVSS4, startingCVSS3, endingCVSS3, startingCVSS2, endingCVSS2, entries, page, filter);
+    else
+        sqliteManager->setNoneCVEsModelQuery(reportName, packageID,  status, vector, entries, page, filter);
 }
 
-qint64 ReportData::selectCVEsRowCount(qint64 packageID, const QString& status, const QString& vector, double startingCVSS3, double endingCVSS3, const QString& filter)
+qint64 ReportData::selectCVEsRowCount(qint64 packageID, const QString& status, const QString& vector, double startingCVSS4, double endingCVSS4, double startingCVSS3, double endingCVSS3, double startingCVSS2, double endingCVSS2, const QString& filter)
 {
-    return sqliteManager->getCVEsRowCount(reportName, packageID,  status, vector, startingCVSS3, endingCVSS3, filter);
+    if (startingCVSS4 != 0 || endingCVSS4 != 0 || startingCVSS3 != 0 || endingCVSS3 != 0 || startingCVSS2 != 0 || endingCVSS2 != 0)
+        return sqliteManager->getCVEsRowCount(reportName, packageID,  status, vector, startingCVSS4, endingCVSS4, startingCVSS3, endingCVSS3, startingCVSS2, endingCVSS2, filter);
+    return sqliteManager->getNoneCVEsRowCount(reportName, packageID,  status, vector, filter);
+}
+
+void ReportData::selectNoneCVEs(qint64 packageID, const QString& status, const QString& vector, int entries, int page, const QString& filter)
+{
+    sqliteManager->setNoneCVEsModelQuery(reportName, packageID,  status, vector, entries, page, filter);
+}
+
+qint64 ReportData::selectNoneCVEsRowCount(qint64 packageID, const QString& status, const QString& vector, const QString& filter)
+{
+    return sqliteManager->getNoneCVEsRowCount(reportName, packageID,  status, vector, filter);
 }
 
 void ReportData::selectIgnoredCVEs(int entries, int page, const QString& filter)
@@ -209,6 +299,13 @@ QString ReportData::getHtmlReport()
     htmlReport.append(getHtmlHeader());
     htmlReport.append(getHtmlBody());
     htmlReport.append("</HTML>");
+
+    QFile htmlReportFile{"HTMLReport.html"};
+    htmlReportFile.open(QFile::WriteOnly);
+    htmlReportFile.write(htmlReport.toStdString().c_str());
+    htmlReportFile.flush();
+    htmlReportFile.close();
+
     return htmlReport;
 }
 
@@ -221,28 +318,28 @@ QString ReportData::setStyleSheet()
                      "font-family: verdana;"
                      "backgroud-color: #101010h;"
                      "text-align: center;"
-                     "}"
-                     "h1 {"
+                     "} "
+                     "h1{"
                      "text-align: center;"
-                     "}"
-                     "h2 {"
+                     "} "
+                     "h2{"
                      "margin-top: 5mm;"
                      "text-align: center;"
-                     "}"
-                     "h3 {"
+                     "} "
+                     "h3{"
                      "text-align: center;"
-                     "}"
-                     "p {"
+                     "} "
+                     "p{"
                      "text-align: center;"
-                     "}"
-                     "div { page-break-inside: avoid; }"
-                     "table {"
+                     "} "
+                     "div{ page-break-inside: avoid; } "
+                     "table{"
                      "padding: 5px;"
                      "margin-left: auto;"
                      "margin-right: auto;"
                      "margin-bottom: 5mm;"
                      "page-break-inside:auto;"
-                     "}"
+                     "} "
                      "table .content {"
                      "border: 2px double black;"
                      "border-radius: 5px;"
@@ -251,30 +348,30 @@ QString ReportData::setStyleSheet()
                      "margin-left: auto;"
                      "margin-right: auto;"
                      "page-break-inside:auto;"
-                     "}"
+                     "} "
                      "table .content tr { "
                      "page-break-inside:auto; page-break-after:auto;"
-                     "}"
+                     "} "
                      "table .content thead "
                      "{"
                      "display:table-header-group;"
-                     "}"
+                     "} "
                      "table .content tfoot { "
                      "display:table-footer-group;"
-                     "}"
+                     "} "
                      "table .content th {"
                      "font-size: 8pt;"
                      "border: 1px solid black;"
                      "text-align: center;"
                      "padding: 5px;"
                      "background-color: darkcyan;"
-                     "}"
+                     "} "
                      "table .content td {"
                      "border: 1px solid black;"
                      "font-size: 6pt;"
                      "text-align: center;"
                      "padding: 5px;"
-                     "}"
+                     "} "
                      "table .content td .chart {"
                      "text-align: center;"
                      "}"
@@ -344,7 +441,7 @@ QString ReportData::setStyleSheet()
                      "page-break-inside:auto;"
                      "}"
                      "div { page-break-inside: auto; }"
-                     "table {"                     
+                     "table {"
                      "margin-left: auto;"
                      "margin-right: auto;"
                      "width: 190mm;"
@@ -558,12 +655,12 @@ QString ReportData::getHtmlReportUnpatchedCriticalCVEs()
 {
     QString html = QString("<H2>%1</H2>").arg(tr("Unpatched Critical CVEs"));
     html.append(QString("<TABLE class='content' width='90%'>"));
-    QList<QVariantList> cves = sqliteManager->getCVEsRecords(reportName, 0, "Unpatched", "", 9.0f, 10.0f);
+    QList<QVariantList> cves = sqliteManager->getCVEsRecords(reportName, 0, "Unpatched", "", 9.0f, 10.0f, 9.0f, 10.0f, 9.0f, 10.0f);
     html.append("<THEAD>"
-                "<TR><TH colspan='7'>" +
+                "<TR><TH colspan='9'>" +
                 QString("<B>%1</B>").arg(tr("Unpatched Critical CVEs")) +
                 "</TH></TR>"
-                "<TR><TH>Name</TH><TH>Layer</TH><TH>Version</TH><TH>NVDID</TH><TH>CVSS3 Score</TH><TH>Vector</TH><TH>Link</TH></TR>"
+                "<TR><TH>Name</TH><TH>Layer</TH><TH>Version</TH><TH>NVDID</TH><TH>CVSS4 Score</TH><TH>CVSS3 Score</TH><TH>CVSS2 Score</TH><TH>Vector</TH><TH>Link</TH></TR>"
                 "</THEAD>");
     html.append("<TBODY>");
     for (auto& cve : cves)
@@ -573,9 +670,11 @@ QString ReportData::getHtmlReportUnpatchedCriticalCVEs()
         html.append("<TD width=150>" + cve.at(2).toString() + "</TD>"); //Layer
         html.append("<TD width=240>" + cve.at(3).toString() + "</TD>"); //Version
         html.append("<TD width=150>" + cve.at(6).toString() + "</TD>"); //NVDID
-        html.append("<TD width=100>" + cve.at(7).toString() + "</TD>"); //CVSS3 Score
-        html.append("<TD width=180>" + cve.at(8).toString() + "</TD>"); //Vector
-        html.append("<TD>" + cve.at(9).toString() + "</TD>"); //Link
+        html.append("<TD width=100>" + cve.at(7).toString() + "</TD>"); //CVSS4 Score
+        html.append("<TD width=100>" + cve.at(8).toString() + "</TD>"); //CVSS3 Score
+        html.append("<TD width=100>" + cve.at(9).toString() + "</TD>"); //CVSS2 Score
+        html.append("<TD width=180>" + cve.at(10).toString() + "</TD>"); //Vector
+        html.append("<TD>" + cve.at(11).toString() + "</TD>"); //Link
         html.append("</TR>");
     }
     html.append("</TBODY>");
@@ -587,12 +686,12 @@ QString ReportData::getHtmlReportUnpatchedHighCVEs()
 {
     QString html = QString("<H2>%1</H2>").arg(tr("Unpatched High CVEs"));
     html.append(QString("<TABLE class='content' width='90%'>"));
-    QList<QVariantList> cves = sqliteManager->getCVEsRecords(reportName, 0, "Unpatched", "", 7.0f, 8.9f);
+    QList<QVariantList> cves = sqliteManager->getCVEsRecords(reportName, 0, "Unpatched", "", 7.0f, 8.9f, 7.0f, 8.9f, 7.0f, 8.9f);
     html.append("<THEAD>"
-                "<TR><TH colspan='7'>" +
+                "<TR><TH colspan='9'>" +
                 QString("<B>%1</B>").arg(tr("Unpatched High CVEs")) +
                 "</TH></TR>"
-                "<TR><TH>Name</TH><TH>Layer</TH><TH>Version</TH><TH>NVDID</TH><TH>CVSS3 Score</TH><TH>Vector</TH><TH>Link</TH></TR>"
+                "<TR><TH>Name</TH><TH>Layer</TH><TH>Version</TH><TH>NVDID</TH><TH>CVSS4 Score</TH><TH>CVSS3 Score</TH><TH>CVSS2 Score</TH><TH>Vector</TH><TH>Link</TH></TR>"
                 "</THEAD>");
     html.append("<TBODY>");
     for (auto& cve : cves)
@@ -602,9 +701,11 @@ QString ReportData::getHtmlReportUnpatchedHighCVEs()
         html.append("<TD width=150>" + cve.at(2).toString() + "</TD>"); //Layer
         html.append("<TD width=240>" + cve.at(3).toString() + "</TD>"); //Version
         html.append("<TD width=150>" + cve.at(6).toString() + "</TD>"); //NVDID
-        html.append("<TD width=100>" + cve.at(7).toString() + "</TD>"); //CVSS3 Score
-        html.append("<TD width=180>" + cve.at(8).toString() + "</TD>"); //Vector
-        html.append("<TD>" + cve.at(9).toString() + "</TD>"); //Link
+        html.append("<TD width=100>" + cve.at(7).toString() + "</TD>"); //CVSS4 Score
+        html.append("<TD width=100>" + cve.at(8).toString() + "</TD>"); //CVSS3 Score
+        html.append("<TD width=100>" + cve.at(9).toString() + "</TD>"); //CVSS2 Score
+        html.append("<TD width=180>" + cve.at(10).toString() + "</TD>"); //Vector
+        html.append("<TD>" + cve.at(11).toString() + "</TD>"); //Link
         html.append("</TR>");
     }
     html.append("</TBODY>");
@@ -616,12 +717,12 @@ QString ReportData::getHtmlReportUnpatchedMediumCVEs()
 {
     QString html = QString("<H2>%1</H2>").arg(tr("Unpatched Medium CVEs"));
     html.append(QString("<TABLE class='content' width='90%'>"));
-    QList<QVariantList> cves = sqliteManager->getCVEsRecords(reportName, 0, "Unpatched", "", 4.0f, 6.9f);
+    QList<QVariantList> cves = sqliteManager->getCVEsRecords(reportName, 0, "Unpatched", "", 4.0f, 6.9f, 4.0f, 6.9f, 4.0f, 6.9f);
     html.append("<THEAD>"
-                "<TR><TH colspan='7'>" +
+                "<TR><TH colspan='9'>" +
                 QString("<B>%1</B>").arg(tr("Unpatched Medium CVEs")) +
                 "</TH></TR>"
-                "<TR><TH>Name</TH><TH>Layer</TH><TH>Version</TH><TH>NVDID</TH><TH>CVSS3 Score</TH><TH>Vector</TH><TH>Link</TH></TR>"
+                "<TR><TH>Name</TH><TH>Layer</TH><TH>Version</TH><TH>NVDID</TH><TH>CVSS4 Score</TH><TH>CVSS3 Score</TH><TH>CVSS2 Score</TH><TH>Vector</TH><TH>Link</TH></TR>"
                 "</THEAD>");
     html.append("<TBODY>");
     for (auto& cve : cves)
@@ -631,9 +732,11 @@ QString ReportData::getHtmlReportUnpatchedMediumCVEs()
         html.append("<TD width=150>" + cve.at(2).toString() + "</TD>"); //Layer
         html.append("<TD width=240>" + cve.at(3).toString() + "</TD>"); //Version
         html.append("<TD width=150>" + cve.at(6).toString() + "</TD>"); //NVDID
-        html.append("<TD width=100>" + cve.at(7).toString() + "</TD>"); //CVSS3 Score
-        html.append("<TD width=180>" + cve.at(8).toString() + "</TD>"); //Vector
-        html.append("<TD>" + cve.at(9).toString() + "</TD>"); //Link
+        html.append("<TD width=100>" + cve.at(7).toString() + "</TD>"); //CVSS4 Score
+        html.append("<TD width=100>" + cve.at(8).toString() + "</TD>"); //CVSS3 Score
+        html.append("<TD width=100>" + cve.at(9).toString() + "</TD>"); //CVSS2 Score
+        html.append("<TD width=180>" + cve.at(10).toString() + "</TD>"); //Vector
+        html.append("<TD>" + cve.at(11).toString() + "</TD>"); //Link
         html.append("</TR>");
     }
     html.append("</TBODY>");
@@ -645,12 +748,12 @@ QString ReportData::getHtmlReportUnpatchedLowCVEs()
 {
     QString html = QString("<H2>%1</H2>").arg(tr("Unpatched Low CVEs"));
     html.append(QString("<TABLE class='content' width='90%'>"));
-    QList<QVariantList> cves = sqliteManager->getCVEsRecords(reportName, 0, "Unpatched", "", 0.1f, 3.9f);
+    QList<QVariantList> cves = sqliteManager->getCVEsRecords(reportName, 0, "Unpatched", "", 0.1f, 3.9f, 0.1f, 3.9f, 0.1f, 3.9f);
     html.append("<THEAD>"
-                "<TR><TH colspan='7'>" +
+                "<TR><TH colspan='9'>" +
                 QString("<B>%1</B>").arg(tr("Unpatched Low CVEs")) +
                 "</TH></TR>"
-                "<TR><TH>Name</TH><TH>Layer</TH><TH>Version</TH><TH>NVDID</TH><TH>CVSS3 Score</TH><TH>Vector</TH><TH>Link</TH></TR>"
+                "<TR><TH>Name</TH><TH>Layer</TH><TH>Version</TH><TH>NVDID</TH><TH>CVSS4 Score</TH><TH>CVSS3 Score</TH><TH>CVSS2 Score</TH><TH>Vector</TH><TH>Link</TH></TR>"
                 "</THEAD>");
     html.append("<TBODY>");
     for (auto& cve : cves)
@@ -660,9 +763,11 @@ QString ReportData::getHtmlReportUnpatchedLowCVEs()
         html.append("<TD width=150>" + cve.at(2).toString() + "</TD>"); //Layer
         html.append("<TD width=240>" + cve.at(3).toString() + "</TD>"); //Version
         html.append("<TD width=150>" + cve.at(6).toString() + "</TD>"); //NVDID
-        html.append("<TD width=100>" + cve.at(7).toString() + "</TD>"); //CVSS3 Score
-        html.append("<TD width=180>" + cve.at(8).toString() + "</TD>"); //Vector
-        html.append("<TD>" + cve.at(9).toString() + "</TD>"); //Link
+        html.append("<TD width=100>" + cve.at(7).toString() + "</TD>"); //CVSS4 Score
+        html.append("<TD width=100>" + cve.at(8).toString() + "</TD>"); //CVSS3 Score
+        html.append("<TD width=100>" + cve.at(9).toString() + "</TD>"); //CVSS2 Score
+        html.append("<TD width=180>" + cve.at(10).toString() + "</TD>"); //Vector
+        html.append("<TD>" + cve.at(11).toString() + "</TD>"); //Link
         html.append("</TR>");
     }
     html.append("</TBODY>");
@@ -674,12 +779,12 @@ QString ReportData::getHtmlReportUnpatchedNoneCVEs()
 {
     QString html = QString("<H2>%1</H2>").arg(tr("Unpatched None CVEs"));
     html.append(QString("<TABLE class='content' width='90%'>"));
-    QList<QVariantList> cves = sqliteManager->getCVEsRecords(reportName, 0, "Unpatched", "", 0.0f, 0.0f);
+    QList<QVariantList> cves = sqliteManager->getNoneCVEsRecords(reportName, 0, "Unpatched", "");
     html.append("<THEAD>"
-                "<TR><TH colspan='7'>" +
+                "<TR><TH colspan='9'>" +
                 QString("<B>%1</B>").arg(tr("Unpatched None CVEs")) +
                 "</TH></TR>"
-                "<TR><TH>Name</TH><TH>Layer</TH><TH>Version</TH><TH>NVDID</TH><TH>CVSS3 Score</TH><TH>Vector</TH><TH>Link</TH></TR>"
+                "<TR><TH>Name</TH><TH>Layer</TH><TH>Version</TH><TH>NVDID</TH><TH>CVSS4 Score</TH><TH>CVSS3 Score</TH><TH>CVSS2 Score</TH><TH>Vector</TH><TH>Link</TH></TR>"
                 "</THEAD>");
     html.append("<TBODY>");
     for (auto& cve : cves)
@@ -689,9 +794,11 @@ QString ReportData::getHtmlReportUnpatchedNoneCVEs()
         html.append("<TD width=150>" + cve.at(2).toString() + "</TD>"); //Layer
         html.append("<TD width=240>" + cve.at(3).toString() + "</TD>"); //Version
         html.append("<TD width=150>" + cve.at(6).toString() + "</TD>"); //NVDID
-        html.append("<TD width=100>" + cve.at(7).toString() + "</TD>"); //CVSS3 Score
-        html.append("<TD width=180>" + cve.at(8).toString() + "</TD>"); //Vector
-        html.append("<TD>" + cve.at(9).toString() + "</TD>"); //Link
+        html.append("<TD width=100>" + cve.at(7).toString() + "</TD>"); //CVSS4 Score
+        html.append("<TD width=100>" + cve.at(8).toString() + "</TD>"); //CVSS3 Score
+        html.append("<TD width=100>" + cve.at(9).toString() + "</TD>"); //CVSS2 Score
+        html.append("<TD width=180>" + cve.at(10).toString() + "</TD>"); //Vector
+        html.append("<TD>" + cve.at(11).toString() + "</TD>"); //Link
         html.append("</TR>");
     }
     html.append("</TBODY>");
@@ -705,10 +812,10 @@ QString ReportData::getHtmlReportIgnoredCVEs()
     html.append(QString("<TABLE class='content' width='90%'>"));
     QList<QVariantList> cves = sqliteManager->getIgnoredCVEsRecords(reportName);
     html.append("<THEAD>"
-                "<TR><TH colspan='7'>" +
+                "<TR><TH colspan='9'>" +
                 QString("<B>%1</B>").arg(tr("Ignored CVEs")) +
                 "</TH></TR>"
-                "<TR><TH>Name</TH><TH>Layer</TH><TH>Version</TH><TH>NVDID</TH><TH>CVSS3 Score</TH><TH>Vector</TH><TH>Link</TH></TR>"
+                "<TR><TH>Name</TH><TH>Layer</TH><TH>Version</TH><TH>NVDID</TH><TH>CVSS4 Score</TH><TH>CVSS3 Score</TH><TH>CVSS2 Score</TH><TH>Vector</TH><TH>Link</TH></TR>"
                 "</THEAD>");
     html.append("<TBODY>");
     for (auto& cve : cves)
@@ -718,9 +825,11 @@ QString ReportData::getHtmlReportIgnoredCVEs()
         html.append("<TD width=150>" + cve.at(2).toString() + "</TD>"); //Layer
         html.append("<TD width=240>" + cve.at(3).toString() + "</TD>"); //Version
         html.append("<TD width=150>" + cve.at(6).toString() + "</TD>"); //NVDID
-        html.append("<TD width=100>" + cve.at(7).toString() + "</TD>"); //CVSS3 Score
-        html.append("<TD width=180>" + cve.at(8).toString() + "</TD>"); //Vector
-        html.append("<TD>" + cve.at(9).toString() + "</TD>"); //Link
+        html.append("<TD width=100>" + cve.at(7).toString() + "</TD>"); //CVSS4 Score
+        html.append("<TD width=100>" + cve.at(8).toString() + "</TD>"); //CVSS3 Score
+        html.append("<TD width=100>" + cve.at(9).toString() + "</TD>"); //CVSS2 Score
+        html.append("<TD width=180>" + cve.at(10).toString() + "</TD>"); //Vector
+        html.append("<TD>" + cve.at(11).toString() + "</TD>"); //Link
         html.append("</TR>");
     }
     html.append("</TBODY>");

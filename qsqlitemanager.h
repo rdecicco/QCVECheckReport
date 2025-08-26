@@ -63,29 +63,35 @@ public:
 
     QList<PackageDTO> getAllPackages();
     qint64 getPackagesRowCount(const QString &reportName, bool showUnpatchedOnly = true, const QString &filter = QString(""));
-    qint64 getCVEsRowCount(const QString& reportName, qint64 packageID = 0, const QString& status = QString(""), const QString& vector = QString(""), double startingCVSS3 = 0, double endingCVSS3 = 10, const QString& filter= QString(""));
+    qint64 getCVEsRowCount(const QString& reportName, qint64 packageID = 0, const QString& status = QString(""), const QString& vector = QString(""), double startingCVSS4 = 0, double endingCVSS4 = 10, double startingCVSS3 = 0, double endingCVSS3 = 10, double startingCVSS2 = 0, double endingCVSS2 = 10, const QString& filter= QString(""));
+    qint64 getNoneCVEsRowCount(const QString& reportName, qint64 packageID = 0, const QString& status = QString(""), const QString& vector = QString(""), const QString& filter = QString(""));
     qint64 getIgnoredCVEsRowCount(const QString &reportName, const QString &filter = QString(""));
 
-    qint64 getNVDDataNVDsRowCount(const QString& product = QString(""), const QString& vector = QString(""), double cvss3 = 0, const QString& filter= QString(""));
+    qint64 getNVDDataNVDsRowCount(const QString& product = QString(""), const QString& vector = QString(""), double cvss4score = 0, double cvss3score = 0, double cvss2score = 0, const QString& filter= QString(""));
     qint64 getNVDDataProductsRowCount(const QString& productID = QString(""), const QString &filter = QString(""));
 
     QStringList getAllProductsNames();
 
     QList<QVariantList> getPackagesRecords(const QString& reportName, bool showUnpatchedOnly = true, int entries = 0, int page = 1, const QString &filter = QString(""));
-    QList<QVariantList> getCVEsRecords(const QString& reportName, qint64 packageID = 0, const QString& status = QString(""), const QString& vector = QString(""), double startingCVSS3 = 0, double endingCVSS3 = 10, int entries = 0, int page = 1, const QString& filter = QString(""));
+    QList<QVariantList> getCVEsRecords(const QString& reportName, qint64 packageID = 0, const QString& status = QString(""), const QString& vector = QString(""), double startingCVSS4 = 0, double endingCVSS4 = 10, double startingCVSS3 = 0, double endingCVSS3 = 10, double startingCVSS2 = 0, double endingCVSS2 = 10, int entries = 0, int page = 1, const QString& filter = QString(""));
+    QList<QVariantList> getNoneCVEsRecords(const QString& reportName, qint64 packageID = 0, const QString& status = QString(""), const QString& vector = QString(""), int entries = 0, int page = 1, const QString& filter = QString(""));
     QList<QVariantList> getIgnoredCVEsRecords(const QString& reportName, int entries = 0, int page = 1, const QString &filter = QString(""));
 
 public slots:
     void setPackagesModelQuery(const QString& reportName, bool showUnpatchedOnly = true, int entries = 0, int page = 1, const QString &filter = QString(""));
-    void setCVEsModelQuery(const QString& reportName, qint64 packageID = 0, const QString& status = QString(""), const QString& vector = QString(""), double startingCVSS3 = 0, double endingCVSS3 = 10, int entries = 0, int page = 1, const QString& filter = QString(""));
+    void setCVEsModelQuery(const QString& reportName, qint64 packageID = 0, const QString& status = QString(""), const QString& vector = QString(""),  double startingCVSS4 = 0, double endingCVSS4 = 10, double startingCVSS3 = 0, double endingCVSS3 = 10, double startingCVSS2 = 0, double endingCVSS2 = 10, int entries = 0, int page = 1, const QString& filter = QString(""));
+    void setNoneCVEsModelQuery(const QString& reportName, qint64 packageID = 0, const QString& status = QString(""), const QString& vector = QString(""), int entries = 0, int page = 1, const QString& filter = QString(""));
     void setIgnoredCVEsModelQuery(const QString& reportName, int entries = 0, int page = 1, const QString &filter = QString(""));
 
-    void setNVDDataNVDsModelQuery(const QString& product = QString(""), const QString& vector = QString(""), double cvss3 = 0, int entries = 0, int page = 1, const QString& filter = QString(""));
+    void setNVDDataNVDsModelQuery(const QString& product = QString(""), const QString& vector = QString(""), double cvss4score = 0, double cvss3score = 0, double cvss2score = 0, int entries = 0, int page = 1, const QString& filter = QString(""));
     void setNVDDataProductsModelQuery(const QString &productID, int entries = 0, int page = 1, const QString &filter = QString(""));
 
 protected:
     QString getPackagesQueryString(const QString& reportName, bool showUnpatchedOnly = true, int entries = 0, int page = 1, const QString &filter = QString(""));
-    QString getCVEsQueryString(const QString& reportName, qint64 packageID = 0, const QString& status = QString(""), const QString& vector = QString(""), double startingCVSS3 = 0, double endingCVSS3 = 0, int entries = 0, int page = 1, const QString& filter = QString(""));
+    QString getCVEsQueryString(const QString& reportName, qint64 packageID = 0, const QString& status = QString(""), const QString& vector = QString(""), double startingCVSS4 = 0, double endingCVSS4 = 10, double startingCVSS3 = 0, double endingCVSS3 = 10, double startingCVSS2 = 0, double endingCVSS2 = 10, int entries = 0, int page = 1, const QString& filter = QString(""));
+    QString getCVEsRowCountQueryString(const QString& reportName, qint64 packageID = 0, const QString& status = QString(""), const QString& vector = QString(""), double startingCVSS4 = 0, double endingCVSS4 = 10, double startingCVSS3 = 0, double endingCVSS3 = 10, double startingCVSS2 = 0, double endingCVSS2 = 10, const QString& filter= QString(""));
+    QString getNoneCVEsQueryString(const QString& reportName, qint64 packageID = 0, const QString& status = QString(""), const QString& vector = QString(""), int entries = 0, int page = 1, const QString& filter = QString(""));
+    QString getNoneCVEsRowCountQueryString(const QString& reportName, qint64 packageID = 0, const QString& status = QString(""), const QString& vector = QString(""), const QString& filter = QString(""));
     QString getIgnoredCVEsQueryString(const QString& reportName, int entries = 0, int page = 1, const QString &filter = QString(""));
 
 private:
@@ -96,6 +102,8 @@ private:
     QSqlQueryModel* nvdDataProductsModel;
     QSqlQueryModel* nvdDataNVDsModel;
     QMutex* m;
+
+    const int numOfCVEColumns = 13;
 };
 
 #endif // QSQLITEMANAGER_H

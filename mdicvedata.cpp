@@ -36,9 +36,11 @@
 #define NVDsSummaryColumnIndex 1
 #define NVDsScoreV2ColumnIndex 2
 #define NVDsScoreV3ColumnIndex 3
-#define NVDsModifiedColumnIndex 4
-#define NVDsVectorColumnIndex 5
-#define NVDsVectorStringColumnIndex 6
+#define NVDsScoreV4ColumnIndex 4
+#define NVDsModifiedColumnIndex 5
+#define NVDsVectorColumnIndex 6
+#define NVDsVectorStringColumnIndex 7
+
 #define ProductsProductIDColumnIndex 0
 #define ProductsVendorColumnIndex 1
 #define ProductsProductColumnIndex 2
@@ -178,8 +180,8 @@ void MdiCVEData::resizeNVDsTableView()
         int columnCount = nvdsTableView->getModel()->columnCount();
         nvdsTableView->horizontalHeader()->setDefaultSectionSize(nvdsTableView->width() / columnCount - 2);
         nvdsTableView->horizontalHeader()->setDefaultAlignment(Qt::AlignCenter);
-        int widths[7] = { NVDIDWidth, SummaryWidth, CVSSScoreWidth, CVSSScoreWidth, ModifiedWidth, VectorWidth, VectorStringWidth };
-        for (int i = 0; i < 7; i++)
+        int widths[9] = { NVDIDWidth, SummaryWidth, CVSSScoreWidth, CVSSScoreWidth, CVSSScoreWidth, ModifiedWidth, VectorWidth, VectorStringWidth };
+        for (int i = 0; i < 9; i++)
         {
             nvdsTableView->setColumnWidth(i, widths[i]);
         }
@@ -280,13 +282,13 @@ void MdiCVEData::selectNVDs(QMutex *nvdsTableMutex, Ui::MdiCVEData *ui, QSQLiteM
     int page = ui->spinBoxNVDsPage->value();
     QString product = ui->comboBoxNVDsProducts->currentText();
     QString vector = ui->comboBoxNVDsAttackVector->currentData().toString();
-    double cvss3score = ui->comboBoxNVDsMinimumCVSS->currentData().toDouble();
+    double cvssscore = ui->comboBoxNVDsMinimumCVSS->currentData().toDouble();
     QString filter = search ? ui->lineEditSearchNVDs->text() : QString("");
-    qint64 totalNumOfNVDs = sqliteManager->getNVDDataNVDsRowCount(product, vector, cvss3score, filter);
+    qint64 totalNumOfNVDs = sqliteManager->getNVDDataNVDsRowCount(product, vector, cvssscore, cvssscore, cvssscore, filter);
     ui->spinBoxNVDsPage->setMinimum(1);
     int pages = numOfNVDsToShow ? totalNumOfNVDs / numOfNVDsToShow + (totalNumOfNVDs % numOfNVDsToShow ? 1 : 0) : 1;
     ui->spinBoxNVDsPage->setMaximum( pages ? pages : 1 );
-    sqliteManager->setNVDDataNVDsModelQuery(product, vector, cvss3score, numOfNVDsToShow, page, filter);
+    sqliteManager->setNVDDataNVDsModelQuery(product, vector, cvssscore, cvssscore, cvssscore, numOfNVDsToShow, page, filter);
     nvdsTableView->verticalScrollBar()->setMaximum(sqliteManager->getNVDDataNVDsModel()->rowCount());
     int startingRow = numOfNVDsToShow * (page - 1) + 1;
     int numOfNVDs = sqliteManager->getNVDDataNVDsModel()->rowCount();

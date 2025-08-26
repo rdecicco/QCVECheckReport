@@ -25,7 +25,7 @@
 
 cmake_minimum_required(VERSION 3.29.3)
 
-project(QCVECheckReport VERSION 0.2 LANGUAGES CXX)
+project(QCVECheckReport VERSION 0.3 LANGUAGES CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -48,64 +48,106 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Pdf)
 
 set(TS_FILES QCVECheckReport_en_US.ts)
 
+set(PROJECT_FORMS
+    qcvecheckapp.ui
+    dialogimportcvereport.ui
+    mdisubwindow.ui
+    dialogimportcvedb.ui
+    mdicvedata.ui
+    mdipdfreport.ui
+)
+
+set(PROJECT_HEADERS
+    DTO/abstractdto.h
+    DTO/cvereportdto.h
+    DTO/packagedto.h
+    DTO/packageproductdto.h
+    DTO/issuedto.h
+    DTO/nvddto.h
+    DTO/productdto.h
+    DAO/abstractdao.h
+    DAO/cvereportdao.h
+    DAO/packagedao.h
+    DAO/packageproductdao.h
+    DAO/issuedao.h
+    DAO/nvddao.h
+    DAO/productdao.h
+    qcvecheckapp.h
+    qsqlitemanager.h
+    jsoncvecheckreportmanager.h
+    dialogimportcvereport.h
+    mdisubwindow.h
+    reportdata.h
+    dialogimportcvedb.h
+    mdicvedata.h
+    mdipdfreport.h
+    html2pdfconverter.h
+)
+
 set(PROJECT_SOURCES
-        main.cpp
-        qcvecheckapp.cpp
-        qcvecheckapp.h
-        qcvecheckapp.ui
-        qsqlitemanager.h
-        qsqlitemanager.cpp
-        jsoncvecheckreportmanager.h
-        jsoncvecheckreportmanager.cpp
-        dialogimportcvereport.h
-        dialogimportcvereport.cpp
-        dialogimportcvereport.ui
-        mdisubwindow.h
-        mdisubwindow.cpp
-        mdisubwindow.ui
-        DTO/abstractdto.h
-        DAO/abstractdao.h
-        DTO/cvereportdto.h
-        DAO/cvereportdao.h
-        DAO/cvereportdao.cpp
-        DTO/packagedto.h
-        DAO/packagedao.h
-        DAO/packagedao.cpp
-        DTO/packageproductdto.h
-        DAO/packageproductdao.cpp
-        DAO/packageproductdao.h
-        DTO/issuedto.h
-        DAO/issuedao.cpp
-        DAO/issuedao.h
-        DTO/nvddto.h
-        DAO/nvddao.cpp
-        DAO/nvddao.h
-        DTO/productdto.h
-        DAO/productdao.cpp
-        DAO/productdao.h
-        reportdata.h
-        reportdata.cpp
-        qsqltableview.cpp
-        dialogimportcvedb.h
-        dialogimportcvedb.cpp
-        dialogimportcvedb.ui        
-        mdicvedata.h
-        mdicvedata.cpp
-        mdicvedata.ui
-        mdipdfreport.cpp
-        mdipdfreport.h
-        mdipdfreport.ui
-        html2pdfconverter.h
-        html2pdfconverter.cpp
-        ${TS_FILES}
+    DAO/cvereportdao.cpp
+    DAO/packagedao.cpp
+    DAO/packageproductdao.cpp
+    DAO/issuedao.cpp
+    DAO/nvddao.cpp
+    DAO/productdao.cpp
+    main.cpp
+    qcvecheckapp.cpp
+    qsqlitemanager.cpp
+    jsoncvecheckreportmanager.cpp
+    dialogimportcvereport.cpp
+    mdisubwindow.cpp
+    reportdata.cpp
+    qsqltableview.cpp
+    dialogimportcvedb.cpp
+    mdicvedata.cpp
+    mdipdfreport.cpp
+    html2pdfconverter.cpp
+    ${TS_FILES}
+)
+
+set(PROJECT_DOCUMENTATION
+    Documentation/CVEReportCVEs.png
+    Documentation/CVEReportGeneralInformation.png
+    Documentation/CVEReportIgnoredCVEs.png
+    Documentation/CVEReportNavigator.png
+    Documentation/CVEReportPackages.png
+    Documentation/CVEReportSummary.png
+    Documentation/cvss-v2-guide.pdf
+    Documentation/cvss-v30-specification_v1.9.pdf
+    Documentation/cvss-v31-specification_r1.pdf
+    Documentation/cvss-v40-specification.pdf
+    Documentation/CVSSDescription.md
+    Documentation/DatabaseStructure.md
+    Documentation/FileMenu.png
+    Documentation/gnu-gpl-v3.0.md
+    Documentation/HTMLReport.png
+    Documentation/ImportCVEDb.png
+    Documentation/ImportedJson.png
+    Documentation/Index.md
+    Documentation/MainWindow.png
+    Documentation/NVD-CVE-2024-45490.png
+    Documentation/OpenDialog.png
+    Documentation/QCVECheckReport.md
+    Documentation/QtKitConfiguration.png
+    Documentation/Report.pdf
+    Documentation/SavePDFReport.png
+    Documentation/SearchCVEs.png
+    Documentation/SoftwareArchitecture.md
+    Documentation/SoftwareDescription.md
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
 
 qt_add_executable(QCVECheckReport
         MANUAL_FINALIZATION
+        ${PROJECT_FORMS}
+        ${PROJECT_HEADERS}
         ${PROJECT_SOURCES}
+        ${PROJECT_DOCUMENTATION}
         QCVECheckReportResources.qrc
+        LICENSE
+        README.md
     )
 
 # Define target properties for Android with Qt 6 as:
