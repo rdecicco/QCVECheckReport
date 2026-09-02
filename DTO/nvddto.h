@@ -58,8 +58,8 @@ public:
     using SharedNVDDTO = std::shared_ptr<NVDDTO>;
 
     NVDDTO(): AbstractDTO() {};
-    NVDDTO(const SharedKey& id, const QString& summary, const QString& scoreV2, const QString& scoreV3, const QDateTime& modified, const QString& vector):
-        AbstractDTO(id), Summary(summary), ScoreV2(scoreV2), ScoreV3(scoreV3), Modified(modified), Vector(vector) {};
+    NVDDTO(const SharedKey& id, const QString& summary, const QString& scoreV2, const QString& scoreV3, const QString& scoreV4, const QDateTime& modified, const QString& vector, const QString& vectorString):
+        AbstractDTO(id), Summary(summary), ScoreV2(scoreV2), ScoreV3(scoreV3), ScoreV4(scoreV4), Modified(modified), Vector(vector), VectorString(vectorString) {};
     ~NVDDTO() {};
 
 protected:
@@ -74,19 +74,19 @@ protected:
 
 public:
     QString getSummary() const { return Summary; };
-    void setSummary(const QString& summary) { Summary = std::move(summary); };
+    void setSummary(const QString& summary) { Summary = summary; };
     QString getScoreV2() const { return ScoreV2; };
-    void setScoreV2(const QString& scoreV2) { ScoreV2 = std::move(scoreV2); };
+    void setScoreV2(const QString& scoreV2) { ScoreV2 = scoreV2; };
     QString getScoreV3() const { return ScoreV3; };
-    void setScoreV3(const QString& scoreV3) { ScoreV3 = std::move(scoreV3); };
+    void setScoreV3(const QString& scoreV3) { ScoreV3 = scoreV3; };
     QString getScoreV4() const { return ScoreV4; };
-    void setScoreV4(const QString& scoreV4) { ScoreV4 = std::move(scoreV4); };
+    void setScoreV4(const QString& scoreV4) { ScoreV4 = scoreV4; };
     QDateTime getModified() const { return Modified; };
     void setModified(const QDateTime& modified) { Modified = modified; };
     QString getVector() const { return Vector; };
-    void setVector(const QString& vector) { Vector = std::move(vector); };
+    void setVector(const QString& vector) { Vector = vector; };
     QString getVectorString() const { return VectorString; };
-    void setVectorString(const QString& vectorstring) { VectorString = std::move(vectorstring); };
+    void setVectorString(const QString& vectorstring) { VectorString = vectorstring; };
     const SharedList& getProducts() const { return Products; };
     void setProducts(const SharedList& products) { Products = products; };
 };

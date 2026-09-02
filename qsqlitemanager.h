@@ -33,6 +33,7 @@
 #include <QJsonDocument>
 #include "DTO/abstractdto.h"
 #include "DTO/packagedto.h"
+#include <DTO/productdto.h>
 #include "qmutex.h"
 #include "qsqlquerymodel.h"
 #include "qsqlresult.h"
@@ -49,8 +50,14 @@ public:
     bool openConnection();
     bool closeConnection();
     bool isNewReport(QString jsonReportFileName);
-    bool importJson(const QString& FileName, const QJsonDocument& jsonCVEReport);
-    bool importCVEDb(const QString &CVEDBFileName);
+
+    bool importCVEJsonReport(const QString& FileName, const QJsonDocument& jsonCVEReport);
+    bool importNVDDb(const QString &NVDDBFileName);
+
+    bool importSBOMCVEJsonReport(const QString& FileName, const QJsonDocument& jsonSBOMCVEReport);
+    bool importNVDJsonRepo(const QString &NVDJsonRepoPath);
+    bool importCVEJsonRepo(const QString &CVEJsonRepoPath);
+
     QStringList getCVEReportsList();
 
     AbstractDTO::SharedDTO getFullCVEReport(const QString& reportName);
@@ -76,6 +83,17 @@ public:
     QList<QVariantList> getCVEsRecords(const QString& reportName, qint64 packageID = 0, const QString& status = QString(""), const QString& vector = QString(""), double startingCVSS4 = 0, double endingCVSS4 = 10, double startingCVSS3 = 0, double endingCVSS3 = 10, double startingCVSS2 = 0, double endingCVSS2 = 10, int entries = 0, int page = 1, const QString& filter = QString(""));
     QList<QVariantList> getNoneCVEsRecords(const QString& reportName, qint64 packageID = 0, const QString& status = QString(""), const QString& vector = QString(""), int entries = 0, int page = 1, const QString& filter = QString(""));
     QList<QVariantList> getIgnoredCVEsRecords(const QString& reportName, int entries = 0, int page = 1, const QString &filter = QString(""));
+
+private:
+    bool importNVDJsonObject(const QJsonObject &NVDJsonObject);
+    void getCVSSMetricV2(const QJsonValue& cvssMetricV2, QString& scoreV2, QString& vector, QString& vectorString);
+    void getCVSSMetricV34(const QJsonValue& cvssMetricV2, QString& scoreV2, QString& vector, QString& vectorString);
+    QList<ProductDTO> getProducts(const QJsonObject &NVDJsonObject);
+    QList<ProductDTO> getAffected(const QJsonObject& NVDJsonObject);
+    void getProductInfo(const QJsonObject& cpeMatchObject, QString& vendor, QString& product, QString &version);
+    QList<ProductDTO> getConfigurations(const QJsonObject& NVDJsonObject);
+    void getCPEMatchInfo(const QJsonObject& cpeMatch, bool& vulnerable, QString& versionStartExcluding, QString& versionStartIncluding, QString& versionEndExcluding, QString& versionEndIncluding);
+    bool importCVEJsonObject(const QJsonObject &CVEJsonObject);
 
 public slots:
     void setPackagesModelQuery(const QString& reportName, bool showUnpatchedOnly = true, int entries = 0, int page = 1, const QString &filter = QString(""));

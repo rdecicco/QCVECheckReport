@@ -58,7 +58,7 @@ public:
     using SharedPackageDTO = std::shared_ptr<PackageDTO>;
 
     PackageDTO() noexcept: AbstractDTO()  {};
-    PackageDTO(const std::shared_ptr<AbstractDTO::Key>& id, const QString& name, const QString& layer, const QString& version, const std::shared_ptr<AbstractDTO> report) noexcept:
+    PackageDTO(const SharedKey& id, const QString& name, const QString& layer, const QString& version, const SharedDTO& report) noexcept:
         AbstractDTO(id), Name(name), Layer(layer), Version(version), cveReport(report) {};
     ~PackageDTO() noexcept {};
 
@@ -66,19 +66,19 @@ protected:
     QString Name;
     QString Layer;
     QString Version;
-    std::shared_ptr<AbstractDTO> cveReport;
+    SharedDTO cveReport;
     SharedIntMap PackageProducts;
     SharedIntMap Issues;
 
 public:
     QString getName() const { return Name; };
-    void setName(const QString& name) { Name = std::move(name); };
+    void setName(const QString& name) { Name = name; };
     QString getLayer() const { return Layer; };
-    void setLayer(const QString& layer) { Layer = std::move(layer); };
+    void setLayer(const QString& layer) { Layer = layer; };
     QString getVersion() const { return Version; };
-    void setVersion(const QString& version) { Version = std::move(version); };
-    std::shared_ptr<AbstractDTO> getCVEReport() const { return cveReport; };
-    void setCVEReport(const std::shared_ptr<AbstractDTO> report) { cveReport = report; };
+    void setVersion(const QString& version) { Version = version; };
+    SharedDTO getCVEReport() const { return cveReport; };
+    void setCVEReport(const SharedDTO& report) { cveReport = report; };
     const SharedIntMap& getPackageProducts() const { return PackageProducts; };
     void setPackageProducts(const SharedIntMap& packageProducts) { PackageProducts = packageProducts; };
     const SharedIntMap& getIssues() const { return Issues; };

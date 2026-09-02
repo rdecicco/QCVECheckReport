@@ -1,7 +1,7 @@
 /*!
    QCVECheckReport project
 
-   @file: dialogimportcvedb.cpp
+   @file: dialogimportnvddb.h
 
    @author: Raffaele de Cicco <decicco.raffaele@gmail.com>
 
@@ -25,37 +25,33 @@
    limitations under the License.
  */
 
-#include "dialogimportcvedb.h"
-#include "ui_dialogimportcvedb.h"
+#ifndef DIALOGIMPORTNVDDB_H
+#define DIALOGIMPORTNVDDB_H
 
-#include <QFileDialog>
-#include <QMessageBox>
+#include <QDialog>
 
-DialogImportCVEDB::DialogImportCVEDB(QWidget *parent)
-    : QDialog(parent)
-    , ui(new Ui::DialogImportCVEDB)
-{
-    ui->setupUi(this);
+namespace Ui {
+class DialogImportNVDDB;
 }
 
-DialogImportCVEDB::~DialogImportCVEDB()
+class DialogImportNVDDB : public QDialog
 {
-    delete ui;
-}
+    Q_OBJECT
 
-void DialogImportCVEDB::on_pushButtonOpenCVEDbFileName_clicked()
-{
-    ui->lineEditCVEDBFileName->setText(QFileDialog::getOpenFileName(this, tr("Open CVE DB File"), QDir::currentPath(), "Sqlite (*.db)"));
-}
+public:
+    explicit DialogImportNVDDB(QWidget *parent = nullptr);
+    ~DialogImportNVDDB();
+    QString getNVDDbFileName() { return NVDDBFileName; };
 
-void DialogImportCVEDB::accept()
-{
-    CVEDBFileName = ui->lineEditCVEDBFileName->text();
-    if (!QFile::exists(CVEDBFileName))
-    {
-        QMessageBox::critical(this, tr("File error"), tr("Please select a valid file"));
-    }
+protected slots:
+    void accept() override;
 
-    done(DialogCode::Accepted);
-    close();
-}
+private slots:
+    void on_pushButtonOpenNVDDbFileName_clicked();
+
+private:
+    Ui::DialogImportNVDDB *ui;
+    QString NVDDBFileName;
+};
+
+#endif // DIALOGIMPORTNVDDB_H

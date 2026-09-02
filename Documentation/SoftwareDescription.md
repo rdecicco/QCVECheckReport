@@ -12,8 +12,8 @@ The main window present a file menu that has following items:
 
 Open Dialog let you import Json report created by CVECheck tool and its associated NVDB DB by NIST
 
-* Import CVE DB item let import a new version of NVDB DB independently by a Json report \
-![Image](./ImportCVEDb.png "Import CVE DB Dialog")
+* Import NVD DB item let import a new version of NVD DB independently by a Json report \
+![Image](./ImportNVDDb.png "Import NVD DB Dialog")
 
 * Exit item let exit by QCVECheckReport application
 

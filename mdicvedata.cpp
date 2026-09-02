@@ -32,37 +32,43 @@
 #include <QScrollBar>
 #include <QMutex>
 
-#define NVDsNVDIDColumnIndex 0
-#define NVDsSummaryColumnIndex 1
-#define NVDsScoreV2ColumnIndex 2
-#define NVDsScoreV3ColumnIndex 3
-#define NVDsScoreV4ColumnIndex 4
-#define NVDsModifiedColumnIndex 5
-#define NVDsVectorColumnIndex 6
-#define NVDsVectorStringColumnIndex 7
+enum NVDsColumnIndex {
+    NVDID,
+    Summary,
+    ScoreV2,
+    ScoreV3,
+    ScoreV4,
+    Modified,
+    Vector,
+    VectorString,
+    NVDsColumnCount
+};
 
-#define ProductsProductIDColumnIndex 0
-#define ProductsVendorColumnIndex 1
-#define ProductsProductColumnIndex 2
-#define ProductsVersionStartColumnIndex 3
-#define ProductsStartOperatorColumnIndex 4
-#define ProductsVersionEndColumnIndex 5
-#define ProductsEndOperatorColumnIndex 6
+enum ProductsColumnIndex {
+    ProductID,
+    Vendor,
+    Product,
+    VersionStart,
+    OperatorStart,
+    VersionEnd,
+    OperatorEnd,
+    ProductsColumnCount
+};
 
-#define NVDIDWidth 150
-#define SummaryWidth 300
-#define CVSSScoreWidth 100
-#define ModifiedWidth 150
-#define VectorWidth 180
-#define VectorStringWidth 180
+constexpr auto NVDIDWidth = 150;
+constexpr auto SummaryWidth = 300;
+constexpr auto CVSSScoreWidth = 100;
+constexpr auto ModifiedWidth = 150;
+constexpr auto VectorWidth = 180;
+constexpr auto VectorStringWidth = 180;
 
-#define ProductIDWidth 150
-#define VendorWidth 150
-#define ProductWidth 150
-#define VersionStartWidth 150
-#define OperatorStartWidth 150
-#define VersionEndWidth 150
-#define OperatorEndWidth 150
+constexpr auto ProductIDWidth = 150;
+constexpr auto VendorWidth = 150;
+constexpr auto ProductWidth = 150;
+constexpr auto VersionStartWidth = 150;
+constexpr auto OperatorStartWidth = 150;
+constexpr auto VersionEndWidth = 150;
+constexpr auto OperatorEndWidth = 150;
 
 MdiCVEData::MdiCVEData(QSQLiteManager* sqlManager, QWidget *parent)
     : QMdiSubWindow(parent), sqliteManager(sqlManager)
@@ -185,7 +191,7 @@ void MdiCVEData::resizeNVDsTableView()
         {
             nvdsTableView->setColumnWidth(i, widths[i]);
         }
-        nvdsTableView->horizontalHeader()->setSectionResizeMode(NVDsSummaryColumnIndex, QHeaderView::Stretch);
+        nvdsTableView->horizontalHeader()->setSectionResizeMode(NVDsColumnIndex::Summary, QHeaderView::Stretch);
     }
 }
 
@@ -197,12 +203,12 @@ void MdiCVEData::resizeProductsTableView()
         productsTableView->horizontalHeader()->setDefaultSectionSize(productsTableView->width()  / columnCount - 2);
         productsTableView->horizontalHeader()->setDefaultAlignment(Qt::AlignCenter);
         int widths[7] = { ProductIDWidth, VendorWidth, ProductWidth, VersionStartWidth, OperatorStartWidth, VersionEndWidth, OperatorEndWidth };
-        for (int i = ProductsProductIDColumnIndex; i < columnCount; i++)
+        for (int i = ProductsColumnIndex::ProductID; i < columnCount; i++)
         {
             productsTableView->setColumnWidth(i, widths[i]);
         }
-        productsTableView->horizontalHeader()->setSectionResizeMode(ProductsVendorColumnIndex, QHeaderView::Stretch);
-        productsTableView->horizontalHeader()->setSectionResizeMode(ProductsProductColumnIndex, QHeaderView::Stretch);
+        productsTableView->horizontalHeader()->setSectionResizeMode(ProductsColumnIndex::Vendor, QHeaderView::Stretch);
+        productsTableView->horizontalHeader()->setSectionResizeMode(ProductsColumnIndex::Product, QHeaderView::Stretch);
     }
 }
 
@@ -239,10 +245,9 @@ void MdiCVEData::executeSelectNVDs(bool search)
 
     if (execSelectNVDs && execSelectNVDs->isRunning())
     {
+        execSelectNVDs->requestInterruption();
         execSelectNVDs->exit();
-        disconnect(execSelectNVDs, SIGNAL(finished()), this, SLOT(executeSelectNVDsFinished()));
-        delete execSelectNVDs;
-        execSelectNVDs = nullptr;
+        execSelectNVDs->wait();
     }
 
     QMutexLocker locker(&m);
@@ -251,49 +256,52 @@ void MdiCVEData::executeSelectNVDs(bool search)
     {
         if (!execSelectNVDs)
         {
-            execSelectNVDs = QThread::create(selectNVDs, nvdsTableMutex, ui, sqliteManager, nvdsTableView, search);
+            execSelectNVDs = QThread::create([=]() {
+                selectNVDs(search);
+            });
             connect(execSelectNVDs, SIGNAL(finished()), this, SLOT(executeSelectNVDsFinished()));
             execSelectNVDs->start();
         }
     }
     catch (...)
     {
+        execSelectNVDs->requestInterruption();
         execSelectNVDs->quit();
-        disconnect(execSelectNVDs, SIGNAL(finished()), this, SLOT(executeSelectNVDsFinished()));
-        delete execSelectNVDs;
-        execSelectNVDs = nullptr;
+        execSelectNVDs->wait();
     }
 }
 
 void MdiCVEData::executeSelectNVDsFinished()
 {
     disconnect(execSelectNVDs, SIGNAL(finished()), this, SLOT(executeSelectNVDsFinished()));
-    delete execSelectNVDs;
+    execSelectNVDs->deleteLater();
     execSelectNVDs = nullptr;
     QModelIndex startIndexCell = nvdsTableView->getSqlQueryModel()->index(0, 0);
     QModelIndex endIndexCell = nvdsTableView->getSqlQueryModel()->index(nvdsTableView->getSqlQueryModel()->rowCount() - 1, nvdsTableView->getSqlQueryModel()->columnCount() - 1);
     emit nvdsTableViewDataUpdated(startIndexCell, endIndexCell);
 }
 
-void MdiCVEData::selectNVDs(QMutex *nvdsTableMutex, Ui::MdiCVEData *ui, QSQLiteManager *sqliteManager, QSqlTableView* nvdsTableView, bool search)
+void MdiCVEData::selectNVDs(bool search)
 {
-    QMutexLocker locker(nvdsTableMutex);
-    int numOfNVDsToShow = ui->comboBoxShowNs->currentData().toInt();
-    int page = ui->spinBoxNVDsPage->value();
-    QString product = ui->comboBoxNVDsProducts->currentText();
-    QString vector = ui->comboBoxNVDsAttackVector->currentData().toString();
-    double cvssscore = ui->comboBoxNVDsMinimumCVSS->currentData().toDouble();
-    QString filter = search ? ui->lineEditSearchNVDs->text() : QString("");
-    qint64 totalNumOfNVDs = sqliteManager->getNVDDataNVDsRowCount(product, vector, cvssscore, cvssscore, cvssscore, filter);
-    ui->spinBoxNVDsPage->setMinimum(1);
-    int pages = numOfNVDsToShow ? totalNumOfNVDs / numOfNVDsToShow + (totalNumOfNVDs % numOfNVDsToShow ? 1 : 0) : 1;
-    ui->spinBoxNVDsPage->setMaximum( pages ? pages : 1 );
-    sqliteManager->setNVDDataNVDsModelQuery(product, vector, cvssscore, cvssscore, cvssscore, numOfNVDsToShow, page, filter);
-    nvdsTableView->verticalScrollBar()->setMaximum(sqliteManager->getNVDDataNVDsModel()->rowCount());
-    int startingRow = numOfNVDsToShow * (page - 1) + 1;
-    int numOfNVDs = sqliteManager->getNVDDataNVDsModel()->rowCount();
-    int endingRow = numOfNVDsToShow ? std::min(numOfNVDsToShow * page, numOfNVDsToShow * (page - 1) + numOfNVDs) : totalNumOfNVDs;
-    ui->labelNVDsItems->setText(QString("Showing %1 to %2 of %3 items").arg(startingRow).arg(endingRow).arg(totalNumOfNVDs));
+    QMetaObject::invokeMethod(this, [this, search]() {
+        QMutexLocker locker(nvdsTableMutex);
+        int numOfNVDsToShow = ui->comboBoxShowNs->currentData().toInt();
+        int page = ui->spinBoxNVDsPage->value();
+        QString product = ui->comboBoxNVDsProducts->currentText();
+        QString vector = ui->comboBoxNVDsAttackVector->currentData().toString();
+        double cvssscore = ui->comboBoxNVDsMinimumCVSS->currentData().toDouble();
+        QString filter = search ? ui->lineEditSearchNVDs->text() : QString("");
+        qint64 totalNumOfNVDs = sqliteManager->getNVDDataNVDsRowCount(product, vector, cvssscore, cvssscore, cvssscore, filter);
+        ui->spinBoxNVDsPage->setMinimum(1);
+        int pages = numOfNVDsToShow ? totalNumOfNVDs / numOfNVDsToShow + (totalNumOfNVDs % numOfNVDsToShow ? 1 : 0) : 1;
+        ui->spinBoxNVDsPage->setMaximum( pages ? pages : 1 );
+        sqliteManager->setNVDDataNVDsModelQuery(product, vector, cvssscore, cvssscore, cvssscore, numOfNVDsToShow, page, filter);
+        nvdsTableView->verticalScrollBar()->setMaximum(sqliteManager->getNVDDataNVDsModel()->rowCount());
+        int startingRow = numOfNVDsToShow * (page - 1) + 1;
+        int numOfNVDs = sqliteManager->getNVDDataNVDsModel()->rowCount();
+        int endingRow = numOfNVDsToShow ? std::min(numOfNVDsToShow * page, numOfNVDsToShow * (page - 1) + numOfNVDs) : totalNumOfNVDs;
+        ui->labelNVDsItems->setText(QString("Showing %1 to %2 of %3 items").arg(startingRow).arg(endingRow).arg(totalNumOfNVDs));
+    }, Qt::QueuedConnection);
 }
 
 void MdiCVEData::refreshNVDsTableView(const QModelIndex& indexA, const QModelIndex& indexB)
@@ -347,24 +355,33 @@ void MdiCVEData::on_spinBoxNVDsPage_valueChanged(int value)
 void MdiCVEData::nvdsTableViewClicked(const QModelIndex &index)
 {
     selectedProductID = nvdsTableView->getModel()->data(index.sibling(index.row(), 0)).toString();
+    if (index.column() == 0) {
+        QUrl link("https://nvd.nist.gov/vuln/detail/" + selectedProductID.toLower());
+        if (link.isValid())
+        {
+            QDesktopServices::openUrl(link);
+        }
+    }
     executeSelectProducts(selectedProductID);
 }
 
-void MdiCVEData::selectProducts(QMutex* productsTableMutex, Ui::MdiCVEData *ui, QSQLiteManager *sqliteManager, QSqlTableView* productsTableView, const QString& productID, bool search)
+void MdiCVEData::selectProducts(const QString& productID, bool search)
 {
-    QMutexLocker locker(productsTableMutex);
-    int numOfProductsToShow = ui->comboBoxShowProducts->currentData().toInt();
-    int page = ui->spinBoxProductsPage->value();
-    QString filter = search ? ui->lineEditSearchProducts->text() : QString("");
-    qint64 totalNumOfProducts = sqliteManager->getNVDDataProductsRowCount(productID, search ? ui->lineEditSearchProducts->text() : QString(""));
-    ui->spinBoxProductsPage->setMinimum(1);
-    int pages = numOfProductsToShow ? totalNumOfProducts / numOfProductsToShow + (totalNumOfProducts % numOfProductsToShow ? 1 : 0) : 1;
-    ui->spinBoxProductsPage->setMaximum( pages ? pages : 1 );
-    sqliteManager->setNVDDataProductsModelQuery(productID, numOfProductsToShow, page, filter);
-    int startingRow = ui->comboBoxShowProducts->currentData().toInt() * (ui->spinBoxProductsPage->value() - 1) + 1;
-    int numOfProducts = sqliteManager->getNVDDataProductsModel()->rowCount();
-    int endingRow = numOfProductsToShow ? std::min(numOfProductsToShow * page, numOfProductsToShow * (page - 1) + numOfProducts) : totalNumOfProducts;
-    ui->labelProductsItems->setText(QString("Showing %1 to %2 of %3 items").arg(startingRow).arg(endingRow).arg(totalNumOfProducts));
+    QMetaObject::invokeMethod(this, [this, productID, search]() {
+        QMutexLocker locker(productsTableMutex);
+        int numOfProductsToShow = ui->comboBoxShowProducts->currentData().toInt();
+        int page = ui->spinBoxProductsPage->value();
+        QString filter = search ? ui->lineEditSearchProducts->text() : QString("");
+        qint64 totalNumOfProducts = sqliteManager->getNVDDataProductsRowCount(productID, search ? ui->lineEditSearchProducts->text() : QString(""));
+        ui->spinBoxProductsPage->setMinimum(1);
+        int pages = numOfProductsToShow ? totalNumOfProducts / numOfProductsToShow + (totalNumOfProducts % numOfProductsToShow ? 1 : 0) : 1;
+        ui->spinBoxProductsPage->setMaximum( pages ? pages : 1 );
+        sqliteManager->setNVDDataProductsModelQuery(productID, numOfProductsToShow, page, filter);
+        int startingRow = ui->comboBoxShowProducts->currentData().toInt() * (ui->spinBoxProductsPage->value() - 1) + 1;
+        int numOfProducts = sqliteManager->getNVDDataProductsModel()->rowCount();
+        int endingRow = numOfProductsToShow ? std::min(numOfProductsToShow * page, numOfProductsToShow * (page - 1) + numOfProducts) : totalNumOfProducts;
+        ui->labelProductsItems->setText(QString("Showing %1 to %2 of %3 items").arg(startingRow).arg(endingRow).arg(totalNumOfProducts));
+    }, Qt::QueuedConnection);
 }
 
 void MdiCVEData::executeSelectProducts(const QString &productID, bool search)
@@ -373,10 +390,9 @@ void MdiCVEData::executeSelectProducts(const QString &productID, bool search)
 
     if (execSelectProducts && execSelectProducts->isRunning())
     {
+        execSelectProducts->requestInterruption();
         execSelectProducts->exit();
-        disconnect(execSelectProducts, SIGNAL(finished()), this, SLOT(executeSelectProductsFinished()));
-        delete execSelectProducts;
-        execSelectProducts = nullptr;
+        execSelectProducts->wait();
     }
 
     QMutexLocker locker(&m);
@@ -385,24 +401,25 @@ void MdiCVEData::executeSelectProducts(const QString &productID, bool search)
     {        
         if (!execSelectProducts)
         {
-            execSelectProducts = QThread::create(selectProducts, productsTableMutex, ui, sqliteManager, productsTableView, productID, search);
+            execSelectProducts = QThread::create([&]() {
+                selectProducts(productID, search);
+            });
             connect(execSelectProducts, SIGNAL(finished()), this, SLOT(executeSelectProductsFinished()));
             execSelectProducts->start();
         }
     }
     catch (...)
     {
+        execSelectProducts->requestInterruption();
         execSelectProducts->quit();
-        disconnect(execSelectProducts, SIGNAL(finished()), this, SLOT(executeSelectProductsFinished()));
-        delete execSelectProducts;
-        execSelectProducts = nullptr;
+        execSelectProducts->wait();
     }
 }
 
 void MdiCVEData::executeSelectProductsFinished()
 {
     disconnect(execSelectProducts, SIGNAL(finished()), this, SLOT(executeSelectProductsFinished()));
-    delete execSelectProducts;
+    execSelectProducts->deleteLater();
     execSelectProducts = nullptr;
     QModelIndex startIndexCell = productsTableView->getSqlQueryModel()->index(0, 0);
     QModelIndex endIndexCell = productsTableView->getSqlQueryModel()->index(productsTableView->getSqlQueryModel()->rowCount() - 1, productsTableView->getSqlQueryModel()->columnCount() - 1);

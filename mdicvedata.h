@@ -77,10 +77,10 @@ protected:
     QString selectedProductID;
 
     void executeSelectNVDs(bool search = true);
-    static void selectNVDs(QMutex *nvdsTableMutex, Ui::MdiCVEData *ui, QSQLiteManager *sqliteManager, QSqlTableView* nvdsTableView, bool search = true);
+    void selectNVDs(bool search = true);
 
     void executeSelectProducts(const QString &productID = QString(""), bool search = true);
-    static void selectProducts(QMutex *productsTableMutex, Ui::MdiCVEData *ui, QSQLiteManager *sqliteManager, QSqlTableView* productsTableView, const QString &productID = QString(""), bool search = true);
+    void selectProducts(const QString &productID = QString(""), bool search = true);
 
 signals:
     void nvdsTableViewDataUpdated(const QModelIndex &indexA, const QModelIndex &indexB);

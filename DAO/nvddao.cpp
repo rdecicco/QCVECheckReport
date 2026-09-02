@@ -32,7 +32,6 @@
 #include "DTO/issuedto.h"
 #include "qsqlquery.h"
 #include <QFileInfo>
-#include <iostream>
 
 NVDDAO::NVDDAO(const QSqlDatabase& database): AbstractDAO(database) {}
 
@@ -82,7 +81,6 @@ const AbstractDTO::SharedKey NVDDAO::createDTO(AbstractDTO& dto)
         {
             throw new std::exception();
         }
-        dto.setKey(std::make_shared<NVDDTO::NVDKey>(nvdQuery.lastInsertId().toString()));
         return dto.getKey();
     }
     return nullptr;

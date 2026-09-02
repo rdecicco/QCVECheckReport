@@ -199,6 +199,15 @@ bool JsonCVECheckReportManager::isValidCVEReport()
                         }
                     }
                 }
+                else if (packageKey == "cpes")
+                {
+                    QJsonValue issues = packageObject.value("cpes");
+                    if (!issues.isArray())
+                    {
+                        QMessageBox::critical(nullptr, tr("Import Json Report Error"), tr("Import of CSV Report Failed: Not valid cpes of package: ") + packageName);
+                        return false;
+                    }
+                }
                 else
                 {
                     QMessageBox::critical(nullptr, tr("Import Json Report Error"), tr("Import of CSV Report Failed: Not valid packageKey of package:") + packageName + ": " + packageKey);

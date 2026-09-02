@@ -140,71 +140,41 @@ const AbstractDTO::SharedKey ProductDAO::createDTO(AbstractDTO& dto)
                                          .arg(productDTO.getVersionEnd().replace("'", "''"))
                                          .arg(productDTO.getOperatorEnd());
 
-        if (!productQuery.exec(productQueryString))
-        {
-            throw new std::exception();
-        }
+        productQuery.exec(productQueryString);
     }
     return dto.getKey();
 }
 
 AbstractDTO::SharedDTO ProductDAO::readDTO(const AbstractDTO::SharedKey& id)
 {
-    const ProductDTO::ProductKey* productKey = static_cast<const ProductDTO::ProductKey*>(id.get());
-    if (productKey)
-    {
-        QSqlQuery productQuery(sqlDatabase);
-        QString productQueryString = QString("SELECT VENDOR, PRODUCT, VERSION_START, OPERATOR_START, VERSION_END, OPERATOR_END FROM PRODUCTS WHERE ID = '%1'")
-                                         .arg(productKey->getID());
-
-        if (!productQuery.exec(productQueryString))
-        {
-            throw new std::exception();
-        }
-        if (productQuery.next())
-        {
-            std::shared_ptr<ProductDTO> productDTO = std::make_shared<ProductDTO>();
-            productDTO->setKey(id);
-            productDTO->setVendor(productQuery.value("VENDOR").toString());
-            productDTO->setProduct(productQuery.value("PRODUCT").toString());
-            productDTO->setVersionStart(productQuery.value("VERSION_START").toString());
-            productDTO->setOperatorStart(productQuery.value("OPERATOR_START").toString());
-            productDTO->setVersionEnd(productQuery.value("VERSION_END").toString());
-            productDTO->setOperatorEnd(productQuery.value("OPERATOR_END").toString());
-            return productDTO;
-        }
-    }
     return nullptr;
 }
 
 bool ProductDAO::updateDTO(const AbstractDTO& dto)
 {
-    const ProductDTO& productDTO = static_cast<const ProductDTO&>(dto);
-    const ProductDTO::ProductKey* productKey = static_cast<const ProductDTO::ProductKey*>(productDTO.getKey().get());
-    if (productKey)
-    {
-        QSqlQuery productQuery(sqlDatabase);
-        QString productQueryString = QString("UPDATE PRODUCTS SET VENDOR = '%1', PRODUCT = '%2', VERSION_START = '%3', OPERATOR_START = '%4', VERSION_END = '%5', OPERATOR_END = '%6' WHERE ID = '%7'")
-                                         .arg(productDTO.getVendor().replace("'", "''"))
-                                         .arg(productDTO.getProduct().replace("'", "''"))
-                                         .arg(productDTO.getVersionStart().replace("'", "''"))
-                                         .arg(productDTO.getOperatorStart())
-                                         .arg(productDTO.getVersionEnd().replace("'", "''"))
-                                         .arg(productDTO.getOperatorEnd())
-                                         .arg(productKey->getID());
-
-        if (productQuery.exec(productQueryString))
-        {
-            return true;
-        }
-    }
-    return false;
+    return true;
 }
 
 bool ProductDAO::deleteDTO(const AbstractDTO& dto)
 {
     const ProductDTO& productDTO = static_cast<const ProductDTO&>(dto);
-    return deleteDTO(productDTO.getKey());
+
+    const ProductDTO::ProductKey* productKey = static_cast<const ProductDTO::ProductKey*>(productDTO.getKey().get());
+    if (productKey && !productKey->getID().isNull() && !productKey->getID().isEmpty())
+    {
+        QSqlQuery productQuery(sqlDatabase);
+        QString productQueryString = QString("DELETE FROM PRODUCTS WHERE ID = '%1' AND VENDOR = '%2' AND PRODUCT = '%3' AND VERSION_START = '%4' AND OPERATOR_START ='%5' AND VERSION_END = '%6' AND OPERATOR_END = '%7'")
+                                         .arg(productKey->getID())
+                                         .arg(productDTO.getVendor().replace("'", "''"))
+                                         .arg(productDTO.getProduct().replace("'", "''"))
+                                         .arg(productDTO.getVersionStart().replace("'", "''"))
+                                         .arg(productDTO.getOperatorStart())
+                                         .arg(productDTO.getVersionEnd().replace("'", "''"))
+                                         .arg(productDTO.getOperatorEnd());
+
+        productQuery.exec(productQueryString);
+    }
+    return true;
 }
 
 bool ProductDAO::deleteDTO(const AbstractDTO::SharedKey &id)
@@ -216,12 +186,9 @@ bool ProductDAO::deleteDTO(const AbstractDTO::SharedKey &id)
         QString productQueryString = QString("DELETE FROM PRODUCTS WHERE ID = '%1'")
                                          .arg(productKey->getID());
 
-        if (productQuery.exec(productQueryString))
-        {
-            return true;
-        }
+        productQuery.exec(productQueryString);
     }
-    return false;
+    return true;
 }
 
 QList<ProductDTO> ProductDAO::getAllProducts()
@@ -232,20 +199,17 @@ QList<ProductDTO> ProductDAO::getAllProducts()
 
     if (productQuery.exec(productQueryString))
     {
-        if (productQuery.isSelect())
+        while (productQuery.next())
         {
-            while (productQuery.next())
-            {
-                ProductDTO productDTO;
-                productDTO.setKey(std::make_shared<ProductDTO::ProductKey>(productQuery.value("ID").toString()));
-                productDTO.setVendor(productQuery.value("VENDOR").toString());
-                productDTO.setProduct(productQuery.value("PRODUCT").toString());
-                productDTO.setVersionStart(productQuery.value("VERSION_START").toString());
-                productDTO.setOperatorStart(productQuery.value("OPERATOR_START").toString());
-                productDTO.setVersionEnd(productQuery.value("VERSION_END").toString());
-                productDTO.setOperatorEnd(productQuery.value("OPERATOR_END").toString());
-                result.push_back(productDTO);
-            }
+            ProductDTO productDTO;
+            productDTO.setKey(std::make_shared<ProductDTO::ProductKey>(productQuery.value("ID").toString()));
+            productDTO.setVendor(productQuery.value("VENDOR").toString());
+            productDTO.setProduct(productQuery.value("PRODUCT").toString());
+            productDTO.setVersionStart(productQuery.value("VERSION_START").toString());
+            productDTO.setOperatorStart(productQuery.value("OPERATOR_START").toString());
+            productDTO.setVersionEnd(productQuery.value("VERSION_END").toString());
+            productDTO.setOperatorEnd(productQuery.value("OPERATOR_END").toString());
+            result.push_back(productDTO);
         }
     }
     return result;
@@ -262,21 +226,18 @@ QStringList ProductDAO::getAllProductsNames()
 
     if (productQuery.exec(productQueryString))
     {
-        if (productQuery.isSelect())
+        while (productQuery.next())
         {
-            while (productQuery.next())
-            {
-                result.push_back(productQuery.value("PRODUCT").toString());
-            }
+            result.push_back(productQuery.value("PRODUCT").toString());
         }
     }
     return result;
 }
 
-bool ProductDAO::existsDTO(const AbstractDTO &dto)
+bool ProductDAO::existsDTO(const AbstractDTO& dto)
 {
     const ProductDTO& productDTO = static_cast<const ProductDTO&>(dto);
-    const ProductDTO::ProductKey* productKey = static_cast<const ProductDTO::ProductKey*>(productDTO.getKey().get());
+    const ProductDTO::ProductKey* productKey = static_cast<ProductDTO::ProductKey*>(productDTO.getKey().get());
     if (productKey)
     {
         QSqlQuery productQuery(sqlDatabase);
@@ -303,28 +264,29 @@ bool ProductDAO::existsDTO(const AbstractDTO &dto)
 AbstractDTO::SharedList ProductDAO::getProducts(const AbstractDTO::SharedDTO& nvd)
 {
     AbstractDTO::SharedList productsList;
-    const NVDDTO::NVDKey& nvdKey = static_cast<const NVDDTO::NVDKey&>(*nvd->getKey());
+    AbstractDTO::SharedKey sharedKey = nvd->getKey();
+    NVDDTO::NVDKey& nvdKey = static_cast<NVDDTO::NVDKey&>(*sharedKey);
+
 
     QSqlQuery productQuery(sqlDatabase);
-    QString productQueryString = QString("SELECT ID, VENDOR, PRODUCT, VERSION_START, OPERATOR_START, VERSION_END, OPERATOR_END FROM PRODUCTS WHERE ID = %1")
+    QString productQueryString = QString("SELECT ID, VENDOR, PRODUCT, VERSION_START, OPERATOR_START, VERSION_END, OPERATOR_END FROM PRODUCTS WHERE ID = '%1'")
                                             .arg(nvdKey.getID());
 
-    if (!productQuery.exec(productQueryString))
+    if (productQuery.exec(productQueryString))
     {
-        throw new std::exception();
-    }
-    while (productQuery.next())
-    {
-        ProductDTO::SharedProductDTO productDTO = std::make_shared<ProductDTO>();
-        productDTO->setKey(std::make_shared<ProductDTO::ProductKey>(productQuery.value("ID").toString()));
-        productDTO->setVendor(productQuery.value("VENDOR").toString());
-        productDTO->setProduct(productQuery.value("PRODUCT").toString());
-        productDTO->setVersionStart(productQuery.value("VERSION_START").toString());
-        productDTO->setOperatorStart(productQuery.value("OPERATOR_START").toString());
-        productDTO->setVersionEnd(productQuery.value("OPERATOR_END").toString());
-        productDTO->setOperatorEnd(productQuery.value("PRODUCT").toString());
-        productDTO->setNVD(nvd);
-        productsList.push_back(productDTO);
+        while (productQuery.next())
+        {
+            ProductDTO::SharedProductDTO productDTO = std::make_shared<ProductDTO>();
+            productDTO->setKey(std::make_shared<ProductDTO::ProductKey>(productQuery.value("ID").toString()));
+            productDTO->setVendor(productQuery.value("VENDOR").toString());
+            productDTO->setProduct(productQuery.value("PRODUCT").toString());
+            productDTO->setVersionStart(productQuery.value("VERSION_START").toString());
+            productDTO->setOperatorStart(productQuery.value("OPERATOR_START").toString());
+            productDTO->setVersionEnd(productQuery.value("VERSION_END").toString());
+            productDTO->setOperatorEnd(productQuery.value("OPERATOR_END").toString());
+            productDTO->setNVD(nvd);
+            productsList.push_back(productDTO);
+        }
     }
     return productsList;
 }

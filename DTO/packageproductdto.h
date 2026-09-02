@@ -68,7 +68,7 @@ protected:
 
 public:
     QString getProduct() const { return Product; };
-    void setProduct(const QString& product) { Product = std::move(product); };
+    void setProduct(const QString& product) { Product = product; };
     bool getCVEsInrecord() const { return CVEsInRecord; };
     void setCVEsInrecord(const bool cvesInrecord) { CVEsInRecord = cvesInrecord; };
     const SharedDTO& getPackage() const { return Package; };

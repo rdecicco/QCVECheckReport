@@ -58,7 +58,7 @@ public:
     using SharedProductDTO = std::shared_ptr<ProductDTO>;
 
     ProductDTO() noexcept: AbstractDTO() {};
-    ProductDTO(const SharedKey id, const QString& vendor, const QString& product, const QString& versionStart, const QString& operatorStart,const QString& versionEnd,const QString& operatorEnd) noexcept:
+    ProductDTO(const SharedKey& id, const QString& vendor, const QString& product, const QString& versionStart, const QString& operatorStart,const QString& versionEnd,const QString& operatorEnd) noexcept:
         AbstractDTO(id), Vendor(vendor), Product(product), VersionStart(versionStart), OperatorStart(operatorStart), VersionEnd(versionEnd), OperatorEnd(operatorEnd) {};
     ~ProductDTO() noexcept {};
 
@@ -73,17 +73,17 @@ protected:
 
 public:
     QString getVendor() const { return Vendor; };
-    void setVendor(const QString& vendor) { Vendor = std::move(vendor); };
+    void setVendor(const QString& vendor) { Vendor = vendor; };
     QString getProduct() const { return Product; };
-    void setProduct(const QString& product) { Product = std::move(product); };
+    void setProduct(const QString& product) { Product = product; };
     QString getVersionStart() const { return VersionStart; };
-    void setVersionStart(const QString& versionStart) { VersionStart = std::move(versionStart); };
+    void setVersionStart(const QString& versionStart) { VersionStart = versionStart; };
     QString getOperatorStart() const { return OperatorStart; };
-    void setOperatorStart(const QString& operatorStart) { OperatorStart = std::move(operatorStart); };
+    void setOperatorStart(const QString& operatorStart) { OperatorStart = operatorStart; };
     QString getVersionEnd() const { return VersionEnd; };
-    void setVersionEnd(const QString& versionEnd) { VersionEnd = std::move(versionEnd); };
+    void setVersionEnd(const QString& versionEnd) { VersionEnd = versionEnd; };
     QString getOperatorEnd() const { return OperatorEnd; };
-    void setOperatorEnd(const QString& operatorEnd) { OperatorEnd = std::move(operatorEnd); };
+    void setOperatorEnd(const QString& operatorEnd) { OperatorEnd = operatorEnd; };
     const SharedDTO& getNVD() const { return NVD; };
     void setNVD(const SharedDTO& nvd) { NVD = nvd; };
 };

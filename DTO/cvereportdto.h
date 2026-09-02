@@ -71,13 +71,13 @@ protected:
 
 public:
     QString getFileName() const { return FileName; };
-    void setFileName(const QString& filename) { FileName = std::move(filename); };
+    void setFileName(const QString& filename) { FileName = filename; };
     int getVersion() const { return Version; };
     void setVersion(const int version) { Version = version; };
     QDateTime getDate() const { return Date; };
-    void setDate(const QDateTime& date) { Date = std::move(date); };
+    void setDate(const QDateTime& date) { Date = date; };
     QString getOwner() const { return Owner; };
-    void setOwner(const QString& owner) { Owner = std::move(owner); };
+    void setOwner(const QString& owner) { Owner = owner; };
     const SharedIntMap& getPackages() const { return Packages; };
     void setPackages(const SharedIntMap& packages) { Packages = packages; };
 };

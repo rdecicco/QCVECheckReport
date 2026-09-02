@@ -1,7 +1,7 @@
 /*!
    QCVECheckReport project
 
-   @file: mdisubwindow.cpp
+   @file: mdireport.cpp
 
    @author: Raffaele de Cicco <decicco.raffaele@gmail.com>
 
@@ -25,61 +25,57 @@
    limitations under the License.
  */
 
-#include "mdisubwindow.h"
-#include "ui_mdisubwindow.h"
+#include "mdireport.h"
+#include "ui_mdireport.h"
 #include <QResizeEvent>
 #include <QScrollBar>
 #include <QThread>
+#include <unistd.h>
 
-#define PackagesPackageIDColumnIndex 0
-#define PackagesPackageNameColumnIndex 1
-#define PackagesPackageLayerColumnIndex 2
-#define PackagesPackageVersionColumnIndex 3
-#define PacakgesPackageCVEReportIDColumnIndex 4
-#define PackagesCriticalColumnIndex 5
-#define PackagesHighColumnIndex 6
-#define PackagesMediumColumnIndex 7
-#define PackagesLowColumnIndex 8
-#define PackagesUnpatchedColumnIndex 9
-#define PackagesPatchedColumnIndex 10
-#define PackagesIgnoredColumnIndex 11
-#define CVEsPackageIDColumnIndex 0
-#define CVEsPackageNameColumnIndex 1
-#define CVEsPackageLayerColumnIndex 2
-#define CVEsPackageVersionColumnIndex 3
-#define CVEsIssueIDColumnIndex 4
-#define CVEsIssueStatusColumnIndex 5
-#define CVEsIssueNVDIDColumnIndex 6
-#define CVEsNVDCVSS4ScoreColumnIndex 7
-#define CVEsNVDCVSS3ScoreColumnIndex 8
-#define CVEsNVDCVSS2ScoreColumnIndex 9
-#define CVEsNVDVectorColumnIndex 10
-#define CVEsLinkColumnIndex 11
-#define IgnoredCVEsPackageIDColumnIndex 0
-#define IgnoredCVEsPackageNameColumnIndex 1
-#define IgnoredCVEsPackageLayerColumnIndex 2
-#define IgnoredCVEsPackageVersionColumnIndex 3
-#define IgnoredCVEsIssueIDColumnIndex 4
-#define IgnoredCVEsIssueStatusColumnIndex 5
-#define IgnoredCVEsIssueNVDIDColumnIndex 6
-#define IgnoredCVEsNVDCVSS4ScoreColumnIndex 7
-#define IgnoredCVEsNVDCVSS3ScoreColumnIndex 8
-#define IgnoredCVEsNVDCVSS2ScoreColumnIndex 9
-#define IgnoredCVEsNVDVectorColumnIndex 10
-#define IgnoredCVEsLinkColumnIndex 11
+enum PackagesColumnIndex {
+    ID,
+    Name,
+    Layer,
+    Version,
+    CVEReportID,
+    Critical,
+    High,
+    Medium,
+    Low,
+    Unpatched,
+    Patched,
+    Ignored,
+    PackagesColumnsCount
+};
 
-#define NameWidth 180
-#define LayerWidth 180
-#define VersionWidth 220
-#define StatusWidth 120
-#define NVDIDWidth 150
-#define CVSSScoreWidth 100
-#define VectorWidth 180
+enum CVEsColumnIndex {
+    PackageID,
+    PackageName,
+    PackageLayer,
+    PackageVersion,
+    IssueID,
+    IssueStatus,
+    IssueNVDID,
+    NVDCVSS4Score,
+    NVDCVSS3Score,
+    NVDCVSS2Score,
+    NVDVector,
+    Description,
+    CVEsColumnsCount
+};
 
-MdiSubWindow::MdiSubWindow(const QString &fileName, QSQLiteManager* sqlManager, QWidget *parent):
+constexpr auto NameWidth = 180;
+constexpr auto LayerWidth = 180;
+constexpr auto VersionWidth = 220;
+constexpr auto StatusWidth = 120;
+constexpr auto NVDIDWidth = 150;
+constexpr auto CVSSScoreWidth = 100;
+constexpr auto VectorWidth = 180;
+
+MdiReport::MdiReport(const QString &fileName, QSQLiteManager* sqlManager, QWidget *parent):
     QMdiSubWindow(parent), reportFile(fileName), sqliteManager(sqlManager),
     packagesTableMutex(new QMutex()), cvesTableMutex(new QMutex()), ignoredCVEsTableMutex(new QMutex()),
-    ui(new Ui::MdiSubWindow)
+    ui(new Ui::MdiReport)
 {
     ui->setupUi(this);
 
@@ -129,7 +125,7 @@ MdiSubWindow::MdiSubWindow(const QString &fileName, QSQLiteManager* sqlManager, 
     setComboBoxCVEPackages();
 }
 
-MdiSubWindow::~MdiSubWindow()
+MdiReport::~MdiReport()
 {
     disconnect(SIGNAL(packagesTableViewDataUpdated(QModelIndex,QModelIndex)), this, SLOT(refreshPackagesTableView(QModelIndex,QModelIndex)));
     disconnect(SIGNAL(cvesTableViewDataUpdated(QModelIndex,QModelIndex)), this, SLOT(refreshCVEsTableView(QModelIndex,QModelIndex)));
@@ -142,7 +138,7 @@ MdiSubWindow::~MdiSubWindow()
     delete ignoredCVEsTableMutex;
 }
 
-void MdiSubWindow::scrollToGroupBox(GroupBoxEnum groupBox)
+void MdiReport::scrollToGroupBox(GroupBoxEnum groupBox)
 {
     switch (groupBox)
     {
@@ -164,7 +160,7 @@ void MdiSubWindow::scrollToGroupBox(GroupBoxEnum groupBox)
     }
 }
 
-void MdiSubWindow::resizeEvent(QResizeEvent *ev)
+void MdiReport::resizeEvent(QResizeEvent *ev)
 {
     ui->scrollArea->move(10,40);
     ui->scrollArea->resize(ev->size() - QSize(20, 60));
@@ -183,41 +179,41 @@ void MdiSubWindow::resizeEvent(QResizeEvent *ev)
     resizeAllTables();
 }
 
-void MdiSubWindow::resizeAllTables()
+void MdiReport::resizeAllTables()
 {
     resizePackagesTableView();
     resizeCVEsTableView();
     resizeIgnoredCVEsTableView();
 }
 
-void MdiSubWindow::resizePackagesTableView()
+void MdiReport::resizePackagesTableView()
 {
     if (packagesTableView && packagesTableView->getModel() && packagesTableView->getModel()->columnCount())
     {
         int columnCount = packagesTableView->getModel()->columnCount();
         packagesTableView->horizontalHeader()->setDefaultSectionSize(packagesTableView->width()  / (columnCount - 2) - 2);
         packagesTableView->horizontalHeader()->setDefaultAlignment(Qt::AlignCenter);
-        int widths[PackagesCriticalColumnIndex] = { 0, NameWidth, LayerWidth, VersionWidth, 0 };
-        for (int i = PackagesPackageIDColumnIndex; i < PackagesCriticalColumnIndex; i++)
+        int widths[PackagesColumnIndex::Critical] = { 0, NameWidth, LayerWidth, VersionWidth, 0 };
+        for (int i = PackagesColumnIndex::ID; i < PackagesColumnIndex::Critical; i++)
         {
             packagesTableView->horizontalHeader()->setSectionResizeMode(i, QHeaderView::ResizeToContents);
         }
-        for (int i = PackagesCriticalColumnIndex; i < columnCount; i++)
+        for (int i = PackagesColumnIndex::Critical; i < columnCount; i++)
         {
             packagesTableView->horizontalHeader()->setSectionResizeMode(i, QHeaderView::Stretch);
         }
     }
 }
 
-void MdiSubWindow::resizeCVEsTableView()
+void MdiReport::resizeCVEsTableView()
 {
     if (cvesTableView && cvesTableView->getModel() && cvesTableView->getModel()->columnCount())
     {
         int columnCount = cvesTableView->getModel()->columnCount();
         cvesTableView->horizontalHeader()->setDefaultSectionSize(cvesTableView->width() / (columnCount - 2) - 2);
         cvesTableView->horizontalHeader()->setDefaultAlignment(Qt::AlignCenter);
-        int widths[CVEsLinkColumnIndex] = { 0, NameWidth, LayerWidth, VersionWidth, 0, StatusWidth, NVDIDWidth, CVSSScoreWidth, CVSSScoreWidth, CVSSScoreWidth, VectorWidth};
-        for (int i = 0; i < CVEsLinkColumnIndex; i++)
+        int widths[CVEsColumnIndex::Description] = { 0, NameWidth, LayerWidth, VersionWidth, 0, StatusWidth, NVDIDWidth, CVSSScoreWidth, CVSSScoreWidth, CVSSScoreWidth, VectorWidth};
+        for (int i = 0; i < CVEsColumnIndex::Description; i++)
         {
             cvesTableView->setColumnWidth(i, widths[i]);
         }
@@ -225,15 +221,15 @@ void MdiSubWindow::resizeCVEsTableView()
     }
 }
 
-void MdiSubWindow::resizeIgnoredCVEsTableView()
+void MdiReport::resizeIgnoredCVEsTableView()
 {
     if (ignoredCVEsTableView && ignoredCVEsTableView->getModel() && ignoredCVEsTableView->getModel()->columnCount())
     {
         int columnCount = ignoredCVEsTableView->getModel()->columnCount();
         ignoredCVEsTableView->horizontalHeader()->setDefaultSectionSize(ignoredCVEsTableView->width()  / (columnCount - 2) - 2);
         ignoredCVEsTableView->horizontalHeader()->setDefaultAlignment(Qt::AlignCenter);
-        int widths[IgnoredCVEsLinkColumnIndex] = { 0, NameWidth, LayerWidth, VersionWidth, 0, StatusWidth, NVDIDWidth, CVSSScoreWidth, CVSSScoreWidth, CVSSScoreWidth, VectorWidth};
-        for (int i = 0; i < IgnoredCVEsLinkColumnIndex; i++)
+        int widths[CVEsColumnIndex::Description] = { 0, NameWidth, LayerWidth, VersionWidth, 0, StatusWidth, NVDIDWidth, CVSSScoreWidth, CVSSScoreWidth, CVSSScoreWidth, VectorWidth};
+        for (int i = 0; i < CVEsColumnIndex::Description; i++)
         {
             ignoredCVEsTableView->setColumnWidth(i, widths[i]);
         }
@@ -241,7 +237,7 @@ void MdiSubWindow::resizeIgnoredCVEsTableView()
     }
 }
 
-bool MdiSubWindow::packagesKeysComparison(const AbstractDTO::SharedDTO &package1, const AbstractDTO::SharedDTO &package2)
+bool MdiReport::packagesKeysComparison(const AbstractDTO::SharedDTO &package1, const AbstractDTO::SharedDTO &package2)
 {
     const PackageDTO* packageDTO1 = static_cast<const PackageDTO*>(package1.get());
     const PackageDTO* packageDTO2 = static_cast<const PackageDTO*>(package2.get());
@@ -261,7 +257,7 @@ bool MdiSubWindow::packagesKeysComparison(const AbstractDTO::SharedDTO &package1
     return false;
 }
 
-void MdiSubWindow::setComboBoxCVEPackages()
+void MdiReport::setComboBoxCVEPackages()
 {
     ui->comboBoxCVEsPackages->addItem("All", 0);
     const CVEReportDTO& reportDTO = reportData->getFullCVEReport();
@@ -279,7 +275,7 @@ void MdiSubWindow::setComboBoxCVEPackages()
     }
 }
 
-void MdiSubWindow::LoadReportData()
+void MdiReport::LoadReportData()
 {
     try
     {
@@ -411,17 +407,15 @@ void MdiSubWindow::LoadReportData()
     }
 }
 
-void MdiSubWindow::executeSelectPackages(bool search)
+void MdiReport::executeSelectPackages(bool search)
 {
     static QMutex m;
 
     if (execSelectPackages && execSelectPackages->isRunning())
     {
-        execSelectPackages->moveToThread(QThread::currentThread());
+        execSelectPackages->requestInterruption();
         execSelectPackages->quit();
-        disconnect(execSelectPackages, SIGNAL(finished()), this, SLOT(executeSelectPackagesFinished()));
-        delete execSelectPackages;
-        execSelectPackages = nullptr;
+        execSelectPackages->wait();
     }
 
     QMutexLocker locker(&m);
@@ -432,7 +426,9 @@ void MdiSubWindow::executeSelectPackages(bool search)
         {
             if (!reportData.isNull())
             {
-                execSelectPackages = QThread::create(selectPackages, packagesTableMutex, reportData.get(), ui, packagesTableView, search);
+                execSelectPackages = QThread::create([&]() {
+                    selectPackages(search);
+                });
                 connect(execSelectPackages, SIGNAL(finished()), this, SLOT(executeSelectPackagesFinished()));
                 execSelectPackages->start();
             }
@@ -442,20 +438,17 @@ void MdiSubWindow::executeSelectPackages(bool search)
     {
         if (execSelectPackages)
         {
-            execSelectPackages->moveToThread(QThread::currentThread());
+            execSelectPackages->requestInterruption();
             execSelectPackages->quit();
-            disconnect(execSelectPackages, SIGNAL(finished()), this, SLOT(executeSelectPackagesFinished()));
-            delete execSelectPackages;
-            execSelectPackages = nullptr;
+            execSelectPackages->wait();
         }
     }
 }
 
-void MdiSubWindow::executeSelectPackagesFinished()
+void MdiReport::executeSelectPackagesFinished()
 {
-    execSelectPackages->moveToThread(QThread::currentThread());
     disconnect(execSelectPackages, SIGNAL(finished()), this, SLOT(executeSelectPackagesFinished()));
-    delete execSelectPackages;
+    execSelectPackages->deleteLater();
     execSelectPackages = nullptr;
     QMutexLocker locker(packagesTableMutex);
     QModelIndex startIndexCell = packagesTableView->getSqlQueryModel()->index(0, 0);
@@ -463,31 +456,33 @@ void MdiSubWindow::executeSelectPackagesFinished()
     emit packagesTableViewDataUpdated(startIndexCell, endIndexCell);
 }
 
-void MdiSubWindow::selectPackages(QMutex* packagesTableMutex, ReportData* reportData, Ui::MdiSubWindow* ui, QSqlTableView* packagesTableView, bool search)
+void MdiReport::selectPackages(bool search)
 {
-    QMutexLocker locker(packagesTableMutex);
-    if (reportData)
-    {
-        int numOfPackagesToShow = ui->comboBoxShowPackages->currentData().toInt();
-        bool onlyUnfixedPackages = ui->checkBoxOnlyUnfixedPackages->isChecked();
-        int page = ui->spinBoxPackagesPage->value();
-        QString filter = search ? ui->lineEditSearchPackages->text() : QString("");
-        qint64 totalNumOfpackages = reportData->selectPackagesRowCount(ui->checkBoxOnlyUnfixedPackages->isChecked(), search ? ui->lineEditSearchPackages->text() : QString(""));
-        ui->spinBoxPackagesPage->setMinimum(1);
-        int pages = numOfPackagesToShow ? totalNumOfpackages / numOfPackagesToShow + (totalNumOfpackages % numOfPackagesToShow ? 1 : 0) : 1;
-        reportData->selectPackages(onlyUnfixedPackages, numOfPackagesToShow, page, filter);
-        if (reportData->getPackages())
+    QMetaObject::invokeMethod(this, [this, search]() {
+        QMutexLocker locker(packagesTableMutex);
+        if (reportData)
         {
-            int startingRow = ui->comboBoxShowPackages->currentData().toInt() * (ui->spinBoxPackagesPage->value() - 1) + 1;
-            int numOfPackages = reportData->getPackages()->rowCount();
-            int endingRow = numOfPackagesToShow ? std::min(numOfPackagesToShow * page, numOfPackagesToShow * (page - 1) + numOfPackages) : totalNumOfpackages;
-            ui->labelPackagesItems->setText(QString("Showing %1 to %2 of %3 items").arg(startingRow).arg(endingRow).arg(totalNumOfpackages));
-            ui->spinBoxPackagesPage->setMaximum( pages ? pages : 1);
+            int numOfPackagesToShow = ui->comboBoxShowPackages->currentData().toInt();
+            bool onlyUnfixedPackages = ui->checkBoxOnlyUnfixedPackages->isChecked();
+            int page = ui->spinBoxPackagesPage->value();
+            QString filter = search ? ui->lineEditSearchPackages->text() : QString("");
+            qint64 totalNumOfpackages = reportData->selectPackagesRowCount(ui->checkBoxOnlyUnfixedPackages->isChecked(), search ? ui->lineEditSearchPackages->text() : QString(""));
+            ui->spinBoxPackagesPage->setMinimum(1);
+            int pages = numOfPackagesToShow ? totalNumOfpackages / numOfPackagesToShow + (totalNumOfpackages % numOfPackagesToShow ? 1 : 0) : 0;
+            reportData->selectPackages(onlyUnfixedPackages, numOfPackagesToShow, page, filter);
+            if (reportData->getPackages())
+            {
+                int startingRow = ui->comboBoxShowPackages->currentData().toInt() * (ui->spinBoxPackagesPage->value() - 1) + 1;
+                int numOfPackages = reportData->getPackages()->rowCount();
+                int endingRow = numOfPackagesToShow ? std::min(numOfPackagesToShow * page, numOfPackagesToShow * (page - 1) + numOfPackages) : totalNumOfpackages;
+                ui->labelPackagesItems->setText(QString("Showing %1 to %2 of %3 items").arg(startingRow).arg(endingRow).arg(totalNumOfpackages));
+                ui->spinBoxPackagesPage->setMaximum( pages ? pages : 1);
+            }
         }
-    }
+    }, Qt::QueuedConnection);
 }
 
-void MdiSubWindow::refreshPackagesTableView(const QModelIndex &indexA, const QModelIndex &indexB)
+void MdiReport::refreshPackagesTableView(const QModelIndex &indexA, const QModelIndex &indexB)
 {
     packagesTableView->updateStandardItemModel(indexA, indexB);
     QStandardItemModel* model = packagesTableView->getModel();
@@ -495,7 +490,7 @@ void MdiSubWindow::refreshPackagesTableView(const QModelIndex &indexA, const QMo
     packagesTableView->hideColumn(reportData->getPackages()->record().indexOf("CVEReportID"));
     for (int i=0; i< model->columnCount(); ++i)
     {
-        if (i == PackagesPackageNameColumnIndex)
+        if (i == PackagesColumnIndex::Name)
         {
             for (int j=0; j< model->rowCount(); ++j)
             {
@@ -506,47 +501,45 @@ void MdiSubWindow::refreshPackagesTableView(const QModelIndex &indexA, const QMo
     resizePackagesTableView();
 }
 
-void MdiSubWindow::on_checkBoxOnlyUnfixedPackages_stateChanged(int state)
+void MdiReport::on_checkBoxOnlyUnfixedPackages_stateChanged(int state)
 {
     ui->spinBoxPackagesPage->setValue(1);
     executeSelectPackages();
 }
 
-void MdiSubWindow::on_comboBoxShowPackages_currentIndexChanged(int index)
+void MdiReport::on_comboBoxShowPackages_currentIndexChanged(int index)
 {
     ui->spinBoxPackagesPage->setValue(1);
     executeSelectPackages();
 }
 
-void MdiSubWindow::on_pushButtonSearchPackages_clicked()
+void MdiReport::on_pushButtonSearchPackages_clicked()
 {
     ui->spinBoxPackagesPage->setValue(1);
     executeSelectPackages();
 }
 
-void MdiSubWindow::on_spinBoxPackagesPage_valueChanged(int value)
+void MdiReport::on_spinBoxPackagesPage_valueChanged(int value)
 {
     executeSelectPackages();
 }
 
-void MdiSubWindow::on_pushButtonClearSearchPackages_clicked()
+void MdiReport::on_pushButtonClearSearchPackages_clicked()
 {
     ui->lineEditSearchPackages->clear();
     ui->spinBoxPackagesPage->setValue(1);
     executeSelectPackages(false);
 }
 
-void MdiSubWindow::executeSelectCVEs(bool search)
+void MdiReport::executeSelectCVEs(bool search)
 {
     static QMutex m;
 
     if (execSelectCVEs && execSelectCVEs->isRunning())
     {
-        execSelectCVEs->moveToThread(QThread::currentThread());
+        execSelectCVEs->requestInterruption();
         execSelectCVEs->quit();
-        disconnect(execSelectCVEs, SIGNAL(finished()), this, SLOT(executeSelectCVEsFinished()));
-        delete execSelectCVEs;
-        execSelectCVEs = nullptr;
+        execSelectCVEs->wait();
     }
 
     QMutexLocker locker(&m);
@@ -557,7 +550,9 @@ void MdiSubWindow::executeSelectCVEs(bool search)
         {
             if (!reportData.isNull())
             {
-                execSelectCVEs = QThread::create(selectCVEs, cvesTableMutex, reportData.get(), ui, cvesTableView, search);
+                execSelectCVEs = QThread::create([&]() {
+                    selectCVEs(search);
+                });
                 connect(execSelectCVEs, SIGNAL(finished()), this, SLOT(executeSelectCVEsFinished()));
                 execSelectCVEs->start();
             }
@@ -567,20 +562,17 @@ void MdiSubWindow::executeSelectCVEs(bool search)
     {
         if (execSelectCVEs)
         {
-            execSelectCVEs->moveToThread(QThread::currentThread());
+            execSelectCVEs->requestInterruption();
             execSelectCVEs->quit();
-            disconnect(execSelectCVEs, SIGNAL(finished()), this, SLOT(executeSelectCVEsFinished()));
-            delete execSelectCVEs;
-            execSelectCVEs = nullptr;
+            execSelectCVEs->wait();
         }
     }
 }
 
-void MdiSubWindow::executeSelectCVEsFinished()
+void MdiReport::executeSelectCVEsFinished()
 {
-    execSelectCVEs->moveToThread(QThread::currentThread());
     disconnect(execSelectCVEs, SIGNAL(finished()), this, SLOT(executeSelectCVEsFinished()));
-    delete execSelectCVEs;
+    execSelectCVEs->deleteLater();
     execSelectCVEs = nullptr;
     QMutexLocker locker(cvesTableMutex);
     QModelIndex startIndexCell = cvesTableView->getSqlQueryModel()->index(0, 0);
@@ -588,34 +580,36 @@ void MdiSubWindow::executeSelectCVEsFinished()
     emit cvesTableViewDataUpdated(startIndexCell, endIndexCell);
 }
 
-void MdiSubWindow::selectCVEs(QMutex* cvesTableMutex, ReportData* reportData, Ui::MdiSubWindow* ui, QSqlTableView* cvesTableView, bool search)
+void MdiReport::selectCVEs(bool search)
 {
-    QMutexLocker locker(cvesTableMutex);
-    if (reportData)
-    {
-        int numOfCVEsToShow = ui->comboBoxShowCVEs->currentData().toInt();
-        int page = ui->spinBoxCVEsPage->value();
-        qint64 packageID = ui->comboBoxCVEsPackages->currentData().toLongLong();
-        QString status = ui->comboBoxCVEsStatus->currentData().toString();
-        QString vector = ui->comboBoxCVEsAttackVector->currentData().toString();
-        double cvssscore = ui->comboBoxCVEsMinimumCVSS->currentData().toDouble();
-        QString filter = search ? ui->lineEditSearchCVEs->text() : QString("");
-        qint64 totalNumOfCVEs = reportData->selectCVEsRowCount(packageID, status,  vector, cvssscore, 10, cvssscore, 10, cvssscore, 10, filter);
-        ui->spinBoxCVEsPage->setMinimum(1);
-        int pages = numOfCVEsToShow ? totalNumOfCVEs / numOfCVEsToShow + (totalNumOfCVEs % numOfCVEsToShow ? 1 : 0) : 1;
-        reportData->selectCVEs(packageID, status,  vector, cvssscore, 10, cvssscore, 10, cvssscore, 10, numOfCVEsToShow, page, filter);
-        if (reportData->getCVEs())
+    QMetaObject::invokeMethod(this, [this, search]() {
+        QMutexLocker locker(cvesTableMutex);
+        if (reportData)
         {
-            int startingRow = numOfCVEsToShow * (page - 1) + 1;
-            int numOfCVEs = reportData->getCVEs()->rowCount();
-            int endingRow = numOfCVEsToShow ? std::min(numOfCVEsToShow * page, numOfCVEsToShow * (page - 1) + numOfCVEs) : totalNumOfCVEs;
-            ui->labelCVEsItems->setText(QString("Showing %1 to %2 of %3 items").arg(startingRow).arg(endingRow).arg(totalNumOfCVEs));
-            ui->spinBoxCVEsPage->setMaximum( pages ? pages : 1);
+            int numOfCVEsToShow = ui->comboBoxShowCVEs->currentData().toInt();
+            int page = ui->spinBoxCVEsPage->value();
+            qint64 packageID = ui->comboBoxCVEsPackages->currentData().toLongLong();
+            QString status = ui->comboBoxCVEsStatus->currentData().toString();
+            QString vector = ui->comboBoxCVEsAttackVector->currentData().toString();
+            double cvssscore = ui->comboBoxCVEsMinimumCVSS->currentData().toDouble();
+            QString filter = search ? ui->lineEditSearchCVEs->text() : QString("");
+            qint64 totalNumOfCVEs = reportData->selectCVEsRowCount(packageID, status,  vector, cvssscore, 10, cvssscore, 10, cvssscore, 10, filter);
+            ui->spinBoxCVEsPage->setMinimum(1);
+            int pages = numOfCVEsToShow ? totalNumOfCVEs / numOfCVEsToShow + (totalNumOfCVEs % numOfCVEsToShow ? 1 : 0) : 1;
+            reportData->selectCVEs(packageID, status,  vector, cvssscore, 10, cvssscore, 10, cvssscore, 10, numOfCVEsToShow, page, filter);
+            if (reportData->getCVEs())
+            {
+                int startingRow = numOfCVEsToShow * (page - 1) + 1;
+                int numOfCVEs = reportData->getCVEs()->rowCount();
+                int endingRow = numOfCVEsToShow ? std::min(numOfCVEsToShow * page, numOfCVEsToShow * (page - 1) + numOfCVEs) : totalNumOfCVEs;
+                ui->labelCVEsItems->setText(QString("Showing %1 to %2 of %3 items").arg(startingRow).arg(endingRow).arg(totalNumOfCVEs));
+                ui->spinBoxCVEsPage->setMaximum( pages ? pages : 1);
+            }
         }
-    }
+    }, Qt::QueuedConnection);
 }
 
-void MdiSubWindow::refreshCVEsTableView(const QModelIndex& indexA, const QModelIndex& indexB)
+void MdiReport::refreshCVEsTableView(const QModelIndex& indexA, const QModelIndex& indexB)
 {
     cvesTableView->updateStandardItemModel(indexA, indexB);
     QStandardItemModel* model = cvesTableView->getModel();
@@ -623,7 +617,7 @@ void MdiSubWindow::refreshCVEsTableView(const QModelIndex& indexA, const QModelI
     cvesTableView->hideColumn(reportData->getCVEs()->record().indexOf("IID"));
     for (int i=0; i< model->columnCount(); ++i)
     {
-        if (i == CVEsPackageNameColumnIndex || i == CVEsLinkColumnIndex)
+        if (i == CVEsColumnIndex::PackageName || i == CVEsColumnIndex::Description)
         {
             for (int j=0; j< model->rowCount(); ++j)
             {
@@ -637,9 +631,9 @@ void MdiSubWindow::refreshCVEsTableView(const QModelIndex& indexA, const QModelI
     resizeCVEsTableView();
 }
 
-void MdiSubWindow::cvesTableViewClicked(const QModelIndex &index)
+void MdiReport::cvesTableViewClicked(const QModelIndex &index)
 {
-    if (index.column() == CVEsLinkColumnIndex)
+    if (index.column() == CVEsColumnIndex::IssueNVDID)
     {
         if (index.data().toUrl().isValid())
         {
@@ -648,65 +642,63 @@ void MdiSubWindow::cvesTableViewClicked(const QModelIndex &index)
     }
 }
 
-void MdiSubWindow::on_comboBoxCVEsPackages_currentIndexChanged(int index)
+void MdiReport::on_comboBoxCVEsPackages_currentIndexChanged(int index)
 {
     ui->spinBoxCVEsPage->setValue(1);
     executeSelectCVEs();
 }
 
-void MdiSubWindow::on_comboBoxCVEsStatus_currentIndexChanged(int index)
+void MdiReport::on_comboBoxCVEsStatus_currentIndexChanged(int index)
 {
     ui->spinBoxCVEsPage->setValue(1);
     executeSelectCVEs();
 }
 
-void MdiSubWindow::on_comboBoxCVEsAttackVector_currentIndexChanged(int index)
+void MdiReport::on_comboBoxCVEsAttackVector_currentIndexChanged(int index)
 {
     ui->spinBoxCVEsPage->setValue(1);
     executeSelectCVEs();
 }
 
-void MdiSubWindow::on_comboBoxCVEsMinimumCVSS_currentIndexChanged(int index)
+void MdiReport::on_comboBoxCVEsMinimumCVSS_currentIndexChanged(int index)
 {
     ui->spinBoxCVEsPage->setValue(1);
     executeSelectCVEs();
 }
 
-void MdiSubWindow::on_comboBoxShowCVEs_currentIndexChanged(int index)
+void MdiReport::on_comboBoxShowCVEs_currentIndexChanged(int index)
 {
     ui->spinBoxCVEsPage->setValue(1);
     executeSelectCVEs();
 }
 
-void MdiSubWindow::on_pushButtonSearchCVEs_clicked()
+void MdiReport::on_pushButtonSearchCVEs_clicked()
 {
     ui->spinBoxCVEsPage->setValue(1);
     executeSelectCVEs();
 }
 
-void MdiSubWindow::on_pushButtonClearSearchCVEs_clicked()
+void MdiReport::on_pushButtonClearSearchCVEs_clicked()
 {
     ui->lineEditSearchCVEs->clear();
     ui->spinBoxCVEsPage->setValue(1);
     executeSelectCVEs(false);
 }
 
-void MdiSubWindow::on_spinBoxCVEsPage_valueChanged(int index)
+void MdiReport::on_spinBoxCVEsPage_valueChanged(int index)
 {
     executeSelectCVEs();
 }
 
-void MdiSubWindow::executeSelectIgnoredCVEs(bool search)
+void MdiReport::executeSelectIgnoredCVEs(bool search)
 {
     static QMutex m;
 
     if (execSelectIgnoreCVEs && execSelectIgnoreCVEs->isRunning())
     {
-        execSelectIgnoreCVEs->moveToThread(QThread::currentThread());
+        execSelectIgnoreCVEs->requestInterruption();
         execSelectIgnoreCVEs->quit();
-        disconnect(execSelectIgnoreCVEs, SIGNAL(finished()), this, SLOT(executeSelectIgnoredCVEsFinished()));
-        delete execSelectIgnoreCVEs;
-        execSelectIgnoreCVEs = nullptr;
+        execSelectIgnoreCVEs->wait();
     }
 
     QMutexLocker locker(&m);
@@ -716,7 +708,9 @@ void MdiSubWindow::executeSelectIgnoredCVEs(bool search)
         {
             if (!reportData.isNull())
             {
-                execSelectIgnoreCVEs = QThread::create(selectIgnoredCVEs, ignoredCVEsTableMutex, reportData.get(), ui, ignoredCVEsTableView, search);
+                execSelectIgnoreCVEs = QThread::create([&]() {
+                    selectIgnoredCVEs(search);
+                });
                 connect(execSelectIgnoreCVEs, SIGNAL(finished()), this, SLOT(executeSelectIgnoredCVEsFinished()));
                 execSelectIgnoreCVEs->start();
             }
@@ -726,20 +720,17 @@ void MdiSubWindow::executeSelectIgnoredCVEs(bool search)
     {
         if (execSelectIgnoreCVEs)
         {
-            execSelectIgnoreCVEs->moveToThread(QThread::currentThread());
+            execSelectIgnoreCVEs->requestInterruption();
             execSelectIgnoreCVEs->quit();
-            disconnect(execSelectIgnoreCVEs, SIGNAL(finished()), this, SLOT(executeSelectIgnoredCVEsFinished()));
-            delete execSelectIgnoreCVEs;
-            execSelectIgnoreCVEs = nullptr;
+            execSelectIgnoreCVEs->wait();
         }
     }
 }
 
-void MdiSubWindow::executeSelectIgnoredCVEsFinished()
+void MdiReport::executeSelectIgnoredCVEsFinished()
 {
-    execSelectIgnoreCVEs->moveToThread(QThread::currentThread());
     disconnect(execSelectIgnoreCVEs, SIGNAL(finished()), this, SLOT(executeSelectIgnoredCVEsFinished()));
-    delete execSelectIgnoreCVEs;
+    execSelectIgnoreCVEs->deleteLater();
     execSelectIgnoreCVEs = nullptr;
     QMutexLocker locker(ignoredCVEsTableMutex);
     QModelIndex startIndexCell = ignoredCVEsTableView->getSqlQueryModel()->index(0, 0);
@@ -747,30 +738,32 @@ void MdiSubWindow::executeSelectIgnoredCVEsFinished()
     emit ignoredCVEsTableViewDataUpdated(startIndexCell, endIndexCell);
 }
 
-void MdiSubWindow::selectIgnoredCVEs(QMutex* ignoredCVEsTableMutex, ReportData* reportData, Ui::MdiSubWindow* ui, QSqlTableView* ignoredCVEsTableView, bool search)
+void MdiReport::selectIgnoredCVEs(bool search)
 {
-    QMutexLocker locker(ignoredCVEsTableMutex);
-    if (reportData)
-    {
-        int numOfIgnoredCVEsToShow = ui->comboBoxShowIgnoredCVEs->currentData().toInt();
-        int page = ui->spinBoxIgnoredCVEsPage->value();
-        QString filter = search ? ui->lineEditSearchIgnoredCVEs->text() : QString("");
-        qint64 totalNumOfIgnoredCVEs = reportData->selectIgnoredCVEsRowCount(filter);
-        ui->spinBoxIgnoredCVEsPage->setMinimum(1);
-        int pages = numOfIgnoredCVEsToShow ? totalNumOfIgnoredCVEs / numOfIgnoredCVEsToShow + (totalNumOfIgnoredCVEs % numOfIgnoredCVEsToShow ? 1 : 0) : 1;
-        reportData->selectIgnoredCVEs(numOfIgnoredCVEsToShow, page, filter);
-        if (reportData->getIgnoredCVEs())
+    QMetaObject::invokeMethod(this, [this, search]() {
+        QMutexLocker locker(ignoredCVEsTableMutex);
+        if (reportData)
         {
-            int startingRow = numOfIgnoredCVEsToShow * (page - 1) + 1;
-            int numOfIgnoredCVEs = reportData->getIgnoredCVEs()->rowCount();
-            int endingRow = numOfIgnoredCVEsToShow ? std::min(numOfIgnoredCVEsToShow * page, numOfIgnoredCVEsToShow * (page - 1) + numOfIgnoredCVEs) : totalNumOfIgnoredCVEs;
-            ui->labelIgnoredCVEsItems->setText(QString("Showing %1 to %2 of %3 items").arg(startingRow).arg(endingRow).arg(totalNumOfIgnoredCVEs));
-            ui->spinBoxIgnoredCVEsPage->setMaximum( pages ? pages : 1);
+            int numOfIgnoredCVEsToShow = ui->comboBoxShowIgnoredCVEs->currentData().toInt();
+            int page = ui->spinBoxIgnoredCVEsPage->value();
+            QString filter = search ? ui->lineEditSearchIgnoredCVEs->text() : QString("");
+            qint64 totalNumOfIgnoredCVEs = reportData->selectIgnoredCVEsRowCount(filter);
+            ui->spinBoxIgnoredCVEsPage->setMinimum(1);
+            int pages = numOfIgnoredCVEsToShow ? totalNumOfIgnoredCVEs / numOfIgnoredCVEsToShow + (totalNumOfIgnoredCVEs % numOfIgnoredCVEsToShow ? 1 : 0) : 1;
+            reportData->selectIgnoredCVEs(numOfIgnoredCVEsToShow, page, filter);
+            if (reportData->getIgnoredCVEs())
+            {
+                int startingRow = numOfIgnoredCVEsToShow * (page - 1) + 1;
+                int numOfIgnoredCVEs = reportData->getIgnoredCVEs()->rowCount();
+                int endingRow = numOfIgnoredCVEsToShow ? std::min(numOfIgnoredCVEsToShow * page, numOfIgnoredCVEsToShow * (page - 1) + numOfIgnoredCVEs) : totalNumOfIgnoredCVEs;
+                ui->labelIgnoredCVEsItems->setText(QString("Showing %1 to %2 of %3 items").arg(startingRow).arg(endingRow).arg(totalNumOfIgnoredCVEs));
+                ui->spinBoxIgnoredCVEsPage->setMaximum( pages ? pages : 1);
+            }
         }
-    }
+    }, Qt::QueuedConnection);
 }
 
-void MdiSubWindow::refreshIgnoredCVEsTableView(const QModelIndex &indexA, const QModelIndex &indexB)
+void MdiReport::refreshIgnoredCVEsTableView(const QModelIndex &indexA, const QModelIndex &indexB)
 {
     ignoredCVEsTableView->updateStandardItemModel(indexA, indexB);
     QStandardItemModel* model = ignoredCVEsTableView->getModel();
@@ -778,7 +771,7 @@ void MdiSubWindow::refreshIgnoredCVEsTableView(const QModelIndex &indexA, const 
     ignoredCVEsTableView->hideColumn(reportData->getIgnoredCVEs()->record().indexOf("IID"));
     for (int i=0; i< model->columnCount(); ++i)
     {
-        if (i == CVEsPackageNameColumnIndex || i == CVEsLinkColumnIndex)
+        if (i == CVEsColumnIndex::PackageName || i == CVEsColumnIndex::Description)
         {
             for (int j=0; j< model->rowCount(); ++j)
             {
@@ -789,9 +782,9 @@ void MdiSubWindow::refreshIgnoredCVEsTableView(const QModelIndex &indexA, const 
     resizeIgnoredCVEsTableView();
 }
 
-void MdiSubWindow::ignoredCVEsTableViewClicked(const QModelIndex &index)
+void MdiReport::ignoredCVEsTableViewClicked(const QModelIndex &index)
 {
-    if (index.column() == IgnoredCVEsLinkColumnIndex)
+    if (index.column() == CVEsColumnIndex::IssueNVDID)
     {
         if (index.data().toUrl().isValid())
         {
@@ -800,26 +793,26 @@ void MdiSubWindow::ignoredCVEsTableViewClicked(const QModelIndex &index)
     }
 }
 
-void MdiSubWindow::on_comboBoxShowIgnoredCVEs_currentIndexChanged(int index)
+void MdiReport::on_comboBoxShowIgnoredCVEs_currentIndexChanged(int index)
 {
     ui->spinBoxIgnoredCVEsPage->setValue(1);
     executeSelectIgnoredCVEs();
 }
 
-void MdiSubWindow::on_pushButtonSearchIgnoredCVEs_clicked()
+void MdiReport::on_pushButtonSearchIgnoredCVEs_clicked()
 {
     ui->spinBoxIgnoredCVEsPage->setValue(1);
     executeSelectIgnoredCVEs();
 }
 
-void MdiSubWindow::on_pushButtonClearSearchIgnoredCVEe_clicked()
+void MdiReport::on_pushButtonClearSearchIgnoredCVEe_clicked()
 {
     ui->lineEditSearchIgnoredCVEs->clear();
     ui->spinBoxIgnoredCVEsPage->setValue(1);
     executeSelectIgnoredCVEs(false);
 }
 
-void MdiSubWindow::on_spinBoxIgnoredCVEsPage_valueChanged(int index)
+void MdiReport::on_spinBoxIgnoredCVEsPage_valueChanged(int index)
 {
     executeSelectIgnoredCVEs();
 }

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>MdiSubWindow</class>
- <widget class="QWidget" name="MdiSubWindow">
+ <class>MdiReport</class>
+ <widget class="QWidget" name="MdiReport">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -20,28 +20,28 @@
       </size>
      </property>
      <property name="verticalScrollBarPolicy">
-      <enum>Qt::ScrollBarAlwaysOn</enum>
+      <enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOn</enum>
      </property>
      <property name="sizeAdjustPolicy">
-      <enum>QAbstractScrollArea::AdjustToContents</enum>
+      <enum>QAbstractScrollArea::SizeAdjustPolicy::AdjustToContents</enum>
      </property>
      <property name="widgetResizable">
       <bool>true</bool>
      </property>
      <property name="alignment">
-      <set>Qt::AlignCenter</set>
+      <set>Qt::AlignmentFlag::AlignCenter</set>
      </property>
      <widget class="QWidget" name="scrollAreaWidgetContents">
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-1941</y>
+        <y>0</y>
         <width>1244</width>
-        <height>2567</height>
+        <height>2579</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayoutScrollAreaWidget">
-       <item alignment="Qt::AlignTop">
+       <item alignment="Qt::AlignmentFlag::AlignTop">
         <widget class="QGroupBox" name="groupBoxGeneralInformation">
          <property name="title">
           <string>CVE Report General Information</string>
@@ -110,7 +110,7 @@
          </layout>
         </widget>
        </item>
-       <item alignment="Qt::AlignTop">
+       <item alignment="Qt::AlignmentFlag::AlignTop">
         <widget class="QGroupBox" name="groupBoxSummary">
          <property name="minimumSize">
           <size>
@@ -169,7 +169,7 @@
                    </size>
                   </property>
                   <property name="alignment">
-                   <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                   <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
                   </property>
                   <property name="readOnly">
                    <bool>true</bool>
@@ -191,7 +191,7 @@
                    </size>
                   </property>
                   <property name="alignment">
-                   <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                   <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
                   </property>
                   <property name="readOnly">
                    <bool>true</bool>
@@ -229,7 +229,7 @@
                    </size>
                   </property>
                   <property name="alignment">
-                   <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                   <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
                   </property>
                   <property name="readOnly">
                    <bool>true</bool>
@@ -267,7 +267,7 @@
                    </size>
                   </property>
                   <property name="alignment">
-                   <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                   <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
                   </property>
                   <property name="readOnly">
                    <bool>true</bool>
@@ -357,7 +357,7 @@
             <item row="0" column="1" rowspan="2">
              <spacer name="horizontalSpacer">
               <property name="orientation">
-               <enum>Qt::Horizontal</enum>
+               <enum>Qt::Orientation::Horizontal</enum>
               </property>
               <property name="sizeHint" stdset="0">
                <size>
@@ -388,7 +388,7 @@
             </item>
             <item row="0" column="0">
              <layout class="QVBoxLayout" name="verticalLayout">
-              <item alignment="Qt::AlignRight">
+              <item alignment="Qt::AlignmentFlag::AlignRight">
                <widget class="QCheckBox" name="checkBoxOnlyUnfixedPackages">
                 <property name="minimumSize">
                  <size>
@@ -403,10 +403,10 @@
                  </size>
                 </property>
                 <property name="layoutDirection">
-                 <enum>Qt::RightToLeft</enum>
+                 <enum>Qt::LayoutDirection::RightToLeft</enum>
                 </property>
                 <property name="inputMethodHints">
-                 <set>Qt::ImhPreferUppercase</set>
+                 <set>Qt::InputMethodHint::ImhPreferUppercase</set>
                 </property>
                 <property name="text">
                  <string>Show Unpatched Only</string>
@@ -521,7 +521,7 @@
             <item>
              <spacer name="horizontalSpacerPackagesTop">
               <property name="orientation">
-               <enum>Qt::Horizontal</enum>
+               <enum>Qt::Orientation::Horizontal</enum>
               </property>
               <property name="sizeHint" stdset="0">
                <size>
@@ -571,7 +571,7 @@
           <item row="1" column="0">
            <widget class="QTableWidget" name="tableWidgetPackages">
             <property name="sizeAdjustPolicy">
-             <enum>QAbstractScrollArea::AdjustIgnored</enum>
+             <enum>QAbstractScrollArea::SizeAdjustPolicy::AdjustIgnored</enum>
             </property>
             <property name="sortingEnabled">
              <bool>true</bool>
@@ -649,7 +649,7 @@
          </layout>
         </widget>
        </item>
-       <item alignment="Qt::AlignTop">
+       <item alignment="Qt::AlignmentFlag::AlignTop">
         <widget class="QGroupBox" name="groupBoxCVEs">
          <property name="minimumSize">
           <size>
@@ -730,7 +730,7 @@
             <item>
              <spacer name="horizontalSpacerCVEsTop">
               <property name="orientation">
-               <enum>Qt::Horizontal</enum>
+               <enum>Qt::Orientation::Horizontal</enum>
               </property>
               <property name="sizeHint" stdset="0">
                <size>
@@ -839,7 +839,7 @@
             <item>
              <spacer name="horizontalSpacerCVEsBottom">
               <property name="orientation">
-               <enum>Qt::Horizontal</enum>
+               <enum>Qt::Orientation::Horizontal</enum>
               </property>
               <property name="sizeHint" stdset="0">
                <size>
@@ -938,7 +938,7 @@
           <item row="3" column="0">
            <widget class="QTableWidget" name="tableWidgetCVEs">
             <property name="sizeAdjustPolicy">
-             <enum>QAbstractScrollArea::AdjustIgnored</enum>
+             <enum>QAbstractScrollArea::SizeAdjustPolicy::AdjustIgnored</enum>
             </property>
             <property name="sortingEnabled">
              <bool>true</bool>
@@ -1003,7 +1003,7 @@
          </layout>
         </widget>
        </item>
-       <item alignment="Qt::AlignTop">
+       <item alignment="Qt::AlignmentFlag::AlignTop">
         <widget class="QGroupBox" name="groupBoxIgnoredCVEs">
          <property name="minimumSize">
           <size>
@@ -1080,7 +1080,7 @@
               <item>
                <spacer name="horizontalSpacerIgnoredCVETop">
                 <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
+                 <enum>Qt::Orientation::Horizontal</enum>
                 </property>
                 <property name="sizeHint" stdset="0">
                  <size>
@@ -1191,7 +1191,7 @@
             <item>
              <spacer name="horizontalSpacerIgnoredCVEsTop">
               <property name="orientation">
-               <enum>Qt::Horizontal</enum>
+               <enum>Qt::Orientation::Horizontal</enum>
               </property>
               <property name="sizeHint" stdset="0">
                <size>
@@ -1241,7 +1241,7 @@
           <item row="1" column="0">
            <widget class="QTableWidget" name="tableWidgetIgnoredCVEs">
             <property name="sizeAdjustPolicy">
-             <enum>QAbstractScrollArea::AdjustIgnored</enum>
+             <enum>QAbstractScrollArea::SizeAdjustPolicy::AdjustIgnored</enum>
             </property>
             <property name="sortingEnabled">
              <bool>true</bool>

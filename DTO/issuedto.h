@@ -70,9 +70,9 @@ protected:
 
 public:
     QString getStatus() const { return Status; };
-    void setStatus(const QString& status) { Status = std::move(status); };
+    void setStatus(const QString& status) { Status = status; };
     QString getLink() const { return Link; };
-    void setLink(const QString& link) { Link = std::move(link); };
+    void setLink(const QString& link) { Link = link; };
     SharedDTO getPackage() const { return Package; };
     void setPackage(const SharedDTO package) { Package = package; };
     const SharedDTO& getNVD() const { return NVD; };

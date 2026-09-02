@@ -43,23 +43,24 @@ DialogImportCVEReport::~DialogImportCVEReport()
     delete ui;
 }
 
-void DialogImportCVEReport::on_pushButtonOpenJsonFileName_clicked()
+void DialogImportCVEReport::on_pushButtonOpenJsonReportFileName_clicked()
 {
-    ui->lineEditJsonFileName->setText(QFileDialog::getOpenFileName(this, tr("Open JSon Report File"), QDir::currentPath(), "JSon (*.json)"));
+    ui->lineEditJsonReportFileName->setText(QFileDialog::getOpenFileName(this, tr("Open Json Report File"), QDir::currentPath(), "Json (*.json)"));
 }
 
-void DialogImportCVEReport::on_pushButtonOpenCVEDbFileName_clicked()
+void DialogImportCVEReport::on_pushButtonOpenNVDDbFileName_clicked()
 {
-    ui->lineEditCVEDBFileName->setText(QFileDialog::getOpenFileName(this, tr("Open CVE DB File"), QDir::currentPath(), "Sqlite (*.db)"));
+    ui->lineEditNVDDBFileName->setText(QFileDialog::getOpenFileName(this, tr("Open CVE DB File"), QDir::currentPath(), "Sqlite (*.db)"));
 }
 
 void DialogImportCVEReport::accept()
 {
-    CVEDBFileName = ui->lineEditCVEDBFileName->text();
-    jsonReportFileName = ui->lineEditJsonFileName->text();
-    if (!QFile::exists(CVEDBFileName) || !QFile::exists(jsonReportFileName))
+    NVDDBFileName = ui->lineEditNVDDBFileName->text();
+    jsonReportFileName = ui->lineEditJsonReportFileName->text();
+    if (NVDDBFileName.isEmpty() || jsonReportFileName.isEmpty() || !QFile::exists(NVDDBFileName) || !QFile::exists(jsonReportFileName))
     {
         QMessageBox::critical(this, tr("File error"), tr("Please select a valid file"));
+        return;
     }
 
     done(DialogCode::Accepted);

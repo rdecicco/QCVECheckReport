@@ -42,19 +42,19 @@ public:
     explicit DialogImportCVEReport(QWidget *parent = nullptr);
     ~DialogImportCVEReport();
     QString getJsonReportFileName() { return jsonReportFileName; };
-    QString getCVEDbFileName() { return CVEDBFileName; };
+    QString getNVDDbFileName() { return NVDDBFileName; };
 
 protected slots:
     void accept() override;
 
 private slots:
-    void on_pushButtonOpenJsonFileName_clicked();
-    void on_pushButtonOpenCVEDbFileName_clicked();
+    void on_pushButtonOpenJsonReportFileName_clicked();
+    void on_pushButtonOpenNVDDbFileName_clicked();
 
 private:
     Ui::DialogImportCVEReport *ui;
     QString jsonReportFileName;
-    QString CVEDBFileName;
+    QString NVDDBFileName;
 };
 
 #endif // DIALOGIMPORTCVEREPORT_H

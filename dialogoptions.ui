@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>DialogImportCVEDB</class>
- <widget class="QDialog" name="DialogImportCVEDB">
+ <class>DialogOptions</class>
+ <widget class="QDialog" name="DialogOptions">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
-    <height>120</height>
+    <width>500</width>
+    <height>150</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -18,13 +18,13 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>400</width>
-    <height>120</height>
+    <width>500</width>
+    <height>150</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>400</width>
+    <width>500</width>
     <height>150</height>
    </size>
   </property>
@@ -35,60 +35,77 @@
    <item row="1" column="0">
     <widget class="QDialogButtonBox" name="buttonBox">
      <property name="orientation">
-      <enum>Qt::Horizontal</enum>
+      <enum>Qt::Orientation::Horizontal</enum>
      </property>
      <property name="standardButtons">
-      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+      <set>QDialogButtonBox::StandardButton::Cancel|QDialogButtonBox::StandardButton::Ok</set>
      </property>
     </widget>
    </item>
    <item row="0" column="0">
     <layout class="QGridLayout" name="gridLayout">
+     <property name="spacing">
+      <number>12</number>
+     </property>
+     <item row="0" column="1">
+      <widget class="QLineEdit" name="lineEditNVDLinkRoot"/>
+     </item>
      <item row="2" column="1">
-      <widget class="QPushButton" name="pushButtonOpenCVEDbFileName">
+      <widget class="QLineEdit" name="lineEditCVELinkRoot"/>
+     </item>
+     <item row="0" column="0">
+      <widget class="QLabel" name="labelNVDLinkRoot">
        <property name="text">
-        <string>CVE DB...</string>
+        <string>NVD Link Root</string>
        </property>
       </widget>
      </item>
      <item row="2" column="0">
-      <widget class="QLineEdit" name="lineEditCVEDBFileName"/>
+      <widget class="QLabel" name="labelCVELinkRoot">
+       <property name="text">
+        <string>CVE Link Root</string>
+       </property>
+      </widget>
      </item>
     </layout>
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>lineEditNVDLinkRoot</tabstop>
+  <tabstop>lineEditCVELinkRoot</tabstop>
+ </tabstops>
  <resources/>
  <connections>
   <connection>
    <sender>buttonBox</sender>
    <signal>accepted()</signal>
-   <receiver>DialogImportCVEDB</receiver>
+   <receiver>DialogOptions</receiver>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>248</x>
-     <y>254</y>
+     <x>257</x>
+     <y>240</y>
     </hint>
     <hint type="destinationlabel">
      <x>157</x>
-     <y>274</y>
+     <y>249</y>
     </hint>
    </hints>
   </connection>
   <connection>
    <sender>buttonBox</sender>
    <signal>rejected()</signal>
-   <receiver>DialogImportCVEDB</receiver>
+   <receiver>DialogOptions</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>316</x>
-     <y>260</y>
+     <x>325</x>
+     <y>240</y>
     </hint>
     <hint type="destinationlabel">
      <x>286</x>
-     <y>274</y>
+     <y>249</y>
     </hint>
    </hints>
   </connection>
