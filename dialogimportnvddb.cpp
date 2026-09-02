@@ -1,7 +1,7 @@
 /*!
    QCVECheckReport project
 
-   @file: dialogimportcvereport.h
+   @file: dialogimportnvddb.cpp
 
    @author: Raffaele de Cicco <decicco.raffaele@gmail.com>
 
@@ -25,36 +25,37 @@
    limitations under the License.
  */
 
-#ifndef DIALOGIMPORTCVEREPORT_H
-#define DIALOGIMPORTCVEREPORT_H
+#include "dialogimportnvddb.h"
+#include "ui_dialogimportnvddb.h"
 
-#include <QDialog>
+#include <QFileDialog>
+#include <QMessageBox>
 
-namespace Ui {
-class DialogImportCVEReport;
+DialogImportNVDDB::DialogImportNVDDB(QWidget *parent)
+    : QDialog(parent)
+    , ui(new Ui::DialogImportNVDDB)
+{
+    ui->setupUi(this);
 }
 
-class DialogImportCVEReport : public QDialog
+DialogImportNVDDB::~DialogImportNVDDB()
 {
-    Q_OBJECT
+    delete ui;
+}
 
-public:
-    explicit DialogImportCVEReport(QWidget *parent = nullptr);
-    ~DialogImportCVEReport();
-    QString getJsonReportFileName() { return jsonReportFileName; };
-    QString getNVDDbFileName() { return NVDDBFileName; };
+void DialogImportNVDDB::on_pushButtonOpenNVDDbFileName_clicked()
+{
+    ui->lineEditNVDDbFileName->setText(QFileDialog::getOpenFileName(this, tr("Open NVD DB File"), QDir::currentPath(), "Sqlite (*.db)"));
+}
 
-protected slots:
-    void accept() override;
+void DialogImportNVDDB::accept()
+{
+    NVDDBFileName = ui->lineEditNVDDbFileName->text();
+    if (!QFile::exists(NVDDBFileName))
+    {
+        QMessageBox::critical(this, tr("File error"), tr("Please select a valid file"));
+    }
 
-private slots:
-    void on_pushButtonOpenJsonReportFileName_clicked();
-    void on_pushButtonOpenNVDDbFileName_clicked();
-
-private:
-    Ui::DialogImportCVEReport *ui;
-    QString jsonReportFileName;
-    QString NVDDBFileName;
-};
-
-#endif // DIALOGIMPORTCVEREPORT_H
+    done(DialogCode::Accepted);
+    close();
+}

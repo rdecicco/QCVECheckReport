@@ -1,7 +1,7 @@
 /*!
    QCVECheckReport project
 
-   @file: dialogimportcvereport.cpp
+   @file: dialogimportsboncvereport.cpp
 
    @author: Raffaele de Cicco <decicco.raffaele@gmail.com>
 
@@ -25,41 +25,47 @@
    limitations under the License.
  */
 
-#include "dialogimportcvereport.h"
-#include "ui_dialogimportcvereport.h"
+#include "dialogimportsbomcvereport.h"
+#include "ui_dialogimportsbomcvereport.h"
 
 #include <QFileDialog>
 #include <QMessageBox>
 
-DialogImportCVEReport::DialogImportCVEReport(QWidget *parent)
+DialogImportSBOMCVEReport::DialogImportSBOMCVEReport(QWidget *parent)
     : QDialog(parent)
-    , ui(new Ui::DialogImportCVEReport)
+    , ui(new Ui::DialogImportSBOMCVEReport)
 {
     ui->setupUi(this);
 }
 
-DialogImportCVEReport::~DialogImportCVEReport()
+DialogImportSBOMCVEReport::~DialogImportSBOMCVEReport()
 {
     delete ui;
 }
 
-void DialogImportCVEReport::on_pushButtonOpenJsonReportFileName_clicked()
+void DialogImportSBOMCVEReport::on_pushButtonOpenJsonReportFileName_clicked()
 {
     ui->lineEditJsonReportFileName->setText(QFileDialog::getOpenFileName(this, tr("Open Json Report File"), QDir::currentPath(), "Json (*.json)"));
 }
 
-void DialogImportCVEReport::on_pushButtonOpenNVDDbFileName_clicked()
+void DialogImportSBOMCVEReport::on_pushButtonOpenNVDJsonRepoPath_clicked()
 {
-    ui->lineEditNVDDBFileName->setText(QFileDialog::getOpenFileName(this, tr("Open CVE DB File"), QDir::currentPath(), "Sqlite (*.db)"));
+    ui->lineEditNVDJsonRepositoryPath->setText(QFileDialog::getExistingDirectory(this, tr("Open NVD Json Repository Folder"), QDir::currentPath()));
 }
 
-void DialogImportCVEReport::accept()
+void DialogImportSBOMCVEReport::on_pushButtonOpenCVEJsonRepoPath_clicked()
 {
-    NVDDBFileName = ui->lineEditNVDDBFileName->text();
+    ui->lineEditCVEJsonRepositoryPath->setText(QFileDialog::getExistingDirectory(this, tr("Open CVE Json Repository Folder"), QDir::currentPath()));
+}
+
+void DialogImportSBOMCVEReport::accept()
+{
     jsonReportFileName = ui->lineEditJsonReportFileName->text();
-    if (NVDDBFileName.isEmpty() || jsonReportFileName.isEmpty() || !QFile::exists(NVDDBFileName) || !QFile::exists(jsonReportFileName))
+    NVDJsonRepoPath = ui->lineEditNVDJsonRepositoryPath->text();
+    CVEJsonRepoPath = ui->lineEditCVEJsonRepositoryPath->text();
+    if (jsonReportFileName.isEmpty() || !QFile::exists(jsonReportFileName) || (NVDJsonRepoPath.isEmpty() && CVEJsonRepoPath.isEmpty()) )
     {
-        QMessageBox::critical(this, tr("File error"), tr("Please select a valid file"));
+        QMessageBox::critical(this, tr("File error"), tr("Please select a valid file or path"));
         return;
     }
 

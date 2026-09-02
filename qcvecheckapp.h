@@ -31,10 +31,13 @@
 #include <QMainWindow>
 #include <QResizeEvent>
 #include <dialogimportcvereport.h>
-#include "dialogimportcvedb.h"
+#include <dialogimportsbomcvereport.h>
+#include "dialogimportnvddb.h"
+#include "dialogimportnvdjsonrepo.h"
+#include "dialogimportcvejsonrepo.h"
 #include "mdicvedata.h"
 #include "mdipdfreport.h"
-#include "mdisubwindow.h"
+#include "mdireport.h"
 #include "qsqlitemanager.h"
 #include "jsoncvecheckreportmanager.h"
 
@@ -52,11 +55,20 @@ public:
 
 signals:
     void importJsonCVEReportFinished(const QString& jsonReportFileName);
-    void importCVEDBFinished();
+    void importNVDDBFinished();
+    void importNVDJsonRepoFinished();
+    void importCVEJsonRepoFinished();
 
 private slots:
-    void on_action_Open_triggered();
+    void on_action_Import_CVE_Check_Report_triggered();
+    void on_action_Import_SBOM_CVE_Check_Report_triggered();
+    void on_action_Import_NVD_DB_triggered();
+    void on_action_Import_NVD_Json_Repo_triggered();
+    void on_action_Import_CVE_Json_Repo_triggered();
+
     void on_action_Exit_triggered();
+    void on_action_About_QCVECheckReport_triggered();
+
     void on_comboBoxReports_currentIndexChanged(int index);
     void on_pushButtonOpen_clicked();
     void on_pushButtonGeneral_clicked();
@@ -67,44 +79,54 @@ private slots:
 
     void on_pushButtonCVEs_clicked();
 
-    void on_pushButtonIgnoredCVEs_clicked();
-
-    void on_actionImport_CVE_DB_triggered();
+    void on_pushButtonIgnoredCVEs_clicked();    
 
     void on_pushButtonCVEData_clicked();
 
     void on_pushButtonExportReport_clicked();
 
-    static void importCVEReport(QCVECheckApp* parent, const QString& jsonReportFileName, const QString& CVEDBFileName);
-    static void importCVEDB(QCVECheckApp *parent, const QString& CVEDBFileName);
+    static void importCVECheckReport(QCVECheckApp* parent, const QString& jsonReportFileName, const QString& NVDDBFileName);
+    static void importSBOMCVECheckReport(QCVECheckApp* parent, const QString& jsonReportFileName, const QString& NVDJsonRepoPath,  const QString& CVEJsonRepoPath);
+
+    static void importNVDDB(QCVECheckApp *parent, const QString& NVDDBFileName);
+    static void importNVDJsonRepo(QCVECheckApp *parent, const QString& NVDJsonRepoPath);
+    static void importCVEJsonRepo(QCVECheckApp *parent, const QString& CVEJsonRepoPath);
 
     void jsonCVEReportImported(const QString& jsonReportFileName);
-    void CVEDBImported();
+
+    void NVDDBImported();
+    void NVDJsonRepoImported();
+    void CVEJsonRepoImported();
 
     void UpdateCVEReportsComboBox();
 
-    void on_actionAbout_QCVECheckReport_triggered();
-
 private:
-    Ui::QCVECheckApp *ui;
-    DialogImportCVEReport *dialogImportCVEReport;
-    DialogImportCVEDB *dialogImportCVEDB;
-    QSQLiteManager* sqliteDBManager;
+    Ui::QCVECheckApp *ui = nullptr;
+    DialogImportCVEReport *dialogImportCVEReport = nullptr;
+    DialogImportSBOMCVEReport *dialogImportSBOMCVEReport= nullptr;
+    DialogImportNVDDB *dialogImportNVDDB= nullptr;
+    DialogImportNVDJsonRepo *dialogImportNVDJsonRepo= nullptr;
+    DialogImportCVEJsonRepo *dialogImportCVEJsonRepo= nullptr;
+    QSQLiteManager* sqliteDBManager= nullptr;
     JsonCVECheckReportManager jsonCVEReportManager;
     QStringList jsonCVEReportsList;
 
     QMap<QString, MdiPDFReport*> pdfReportsMap;
-    QMap<QString, MdiSubWindow*> subWindowsMap;
+    QMap<QString, MdiReport*> reportMap;
     MdiCVEData* mdiCVEData = nullptr;
 
     void OpenCVEReportWindow(const QString &reportName);
     void OpenPDFReportWindow(const QString &reportName);
 
     QThread* importCVEReportThread = nullptr;
-    QThread* importCVEDbThread = nullptr;
+    QThread* importNVDDbThread = nullptr;
 
-    QMutex* subWindowMapMutex;
-    QMutex* mdiCVEDataMutex;
+    QThread* importSBOMCVEReportThread = nullptr;
+    QThread* importNVDJsonRepoThread = nullptr;
+    QThread* importCVEJsonRepoThread = nullptr;
+
+    QMutex* subWindowMapMutex = nullptr;
+    QMutex* mdiCVEDataMutex = nullptr;
 
 protected:
     void resizeEvent(QResizeEvent *ev) override;

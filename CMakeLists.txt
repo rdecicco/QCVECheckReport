@@ -51,8 +51,11 @@ set(TS_FILES QCVECheckReport_en_US.ts)
 set(PROJECT_FORMS
     qcvecheckapp.ui
     dialogimportcvereport.ui
-    mdisubwindow.ui
-    dialogimportcvedb.ui
+    dialogimportsbomcvereport.ui
+    dialogimportnvddb.ui
+    dialogimportcvejsonrepo.ui
+    dialogimportnvdjsonrepo.ui
+    mdireport.ui    
     mdicvedata.ui
     mdipdfreport.ui
 )
@@ -76,9 +79,11 @@ set(PROJECT_HEADERS
     qsqlitemanager.h
     jsoncvecheckreportmanager.h
     dialogimportcvereport.h
-    mdisubwindow.h
-    reportdata.h
-    dialogimportcvedb.h
+    dialogimportsbomcvereport.h
+    dialogimportnvddb.h
+    dialogimportnvdjsonrepo.h
+    mdireport.h
+    reportdata.h    
     mdicvedata.h
     mdipdfreport.h
     html2pdfconverter.h
@@ -96,10 +101,12 @@ set(PROJECT_SOURCES
     qsqlitemanager.cpp
     jsoncvecheckreportmanager.cpp
     dialogimportcvereport.cpp
-    mdisubwindow.cpp
+    dialogimportsbomcvereport.cpp
+    dialogimportnvddb.cpp
+    dialogimportnvdjsonrepo.cpp
+    mdireport.cpp
     reportdata.cpp
-    qsqltableview.cpp
-    dialogimportcvedb.cpp
+    qsqltableview.cpp    
     mdicvedata.cpp
     mdipdfreport.cpp
     html2pdfconverter.cpp
@@ -135,6 +142,8 @@ set(PROJECT_DOCUMENTATION
     Documentation/SearchCVEs.png
     Documentation/SoftwareArchitecture.md
     Documentation/SoftwareDescription.md
+    LICENSE
+    README.md
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
@@ -146,8 +155,8 @@ qt_add_executable(QCVECheckReport
         ${PROJECT_SOURCES}
         ${PROJECT_DOCUMENTATION}
         QCVECheckReportResources.qrc
-        LICENSE
-        README.md
+        dialogimportcvejsonrepo.h
+        dialogimportcvesonrepo.cpp
     )
 
 # Define target properties for Android with Qt 6 as:

@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>DialogImportCVEReport</class>
- <widget class="QDialog" name="DialogImportCVEReport">
+ <class>DialogImportNVDDB</class>
+ <widget class="QDialog" name="DialogImportNVDDB">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
     <width>500</width>
-    <height>150</height>
+    <height>120</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -19,13 +19,13 @@
   <property name="minimumSize">
    <size>
     <width>500</width>
-    <height>150</height>
+    <height>120</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
     <width>500</width>
-    <height>150</height>
+    <height>120</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -44,70 +44,51 @@
    </item>
    <item row="0" column="0">
     <layout class="QGridLayout" name="gridLayout">
-     <property name="spacing">
-      <number>12</number>
-     </property>
-     <item row="2" column="0">
-      <widget class="QLineEdit" name="lineEditNVDDBFileName"/>
-     </item>
-     <item row="0" column="2">
-      <widget class="QPushButton" name="pushButtonOpenJsonReportFileName">
-       <property name="text">
-        <string>Report...</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="0">
-      <widget class="QLineEdit" name="lineEditJsonReportFileName"/>
-     </item>
-     <item row="2" column="2">
+     <item row="2" column="1">
       <widget class="QPushButton" name="pushButtonOpenNVDDbFileName">
        <property name="text">
         <string>NVD DB...</string>
        </property>
       </widget>
      </item>
+     <item row="2" column="0">
+      <widget class="QLineEdit" name="lineEditNVDDbFileName"/>
+     </item>
     </layout>
    </item>
   </layout>
  </widget>
- <tabstops>
-  <tabstop>lineEditJsonReportFileName</tabstop>
-  <tabstop>pushButtonOpenJsonReportFileName</tabstop>
-  <tabstop>lineEditNVDDBFileName</tabstop>
-  <tabstop>pushButtonOpenNVDDbFileName</tabstop>
- </tabstops>
  <resources/>
  <connections>
   <connection>
    <sender>buttonBox</sender>
    <signal>accepted()</signal>
-   <receiver>DialogImportCVEReport</receiver>
+   <receiver>DialogImportNVDDB</receiver>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>257</x>
-     <y>240</y>
+     <y>110</y>
     </hint>
     <hint type="destinationlabel">
      <x>157</x>
-     <y>249</y>
+     <y>274</y>
     </hint>
    </hints>
   </connection>
   <connection>
    <sender>buttonBox</sender>
    <signal>rejected()</signal>
-   <receiver>DialogImportCVEReport</receiver>
+   <receiver>DialogImportNVDDB</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>325</x>
-     <y>240</y>
+     <y>110</y>
     </hint>
     <hint type="destinationlabel">
      <x>286</x>
-     <y>249</y>
+     <y>274</y>
     </hint>
    </hints>
   </connection>

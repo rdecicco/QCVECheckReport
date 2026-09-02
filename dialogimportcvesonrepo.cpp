@@ -1,7 +1,7 @@
 /*!
    QCVECheckReport project
 
-   @file: dialogimportcvereport.h
+   @file: dialogimportnvdjsonrepo.cpp
 
    @author: Raffaele de Cicco <decicco.raffaele@gmail.com>
 
@@ -25,36 +25,38 @@
    limitations under the License.
  */
 
-#ifndef DIALOGIMPORTCVEREPORT_H
-#define DIALOGIMPORTCVEREPORT_H
+#include "dialogimportcvejsonrepo.h"
+#include "ui_dialogimportcvejsonrepo.h"
 
-#include <QDialog>
+#include <QFileDialog>
+#include <QMessageBox>
 
-namespace Ui {
-class DialogImportCVEReport;
+DialogImportCVEJsonRepo::DialogImportCVEJsonRepo(QWidget *parent)
+    : QDialog(parent)
+    , ui(new Ui::DialogImportCVEJsonRepo)
+{
+    ui->setupUi(this);
 }
 
-class DialogImportCVEReport : public QDialog
+DialogImportCVEJsonRepo::~DialogImportCVEJsonRepo()
 {
-    Q_OBJECT
+    delete ui;
+}
 
-public:
-    explicit DialogImportCVEReport(QWidget *parent = nullptr);
-    ~DialogImportCVEReport();
-    QString getJsonReportFileName() { return jsonReportFileName; };
-    QString getNVDDbFileName() { return NVDDBFileName; };
+void DialogImportCVEJsonRepo::on_pushButtonOpenCVEJsonRepo_clicked()
+{
+    ui->lineEditCVEJsonRepoPath->setText(QFileDialog::getExistingDirectory(this, tr("Open NVD Json Repository Folder"), QDir::currentPath()));
+}
 
-protected slots:
-    void accept() override;
+void DialogImportCVEJsonRepo::accept()
+{
+    CVEJsonRepoPath = ui->lineEditCVEJsonRepoPath->text();
+    if (CVEJsonRepoPath.isEmpty())
+    {
+        QMessageBox::critical(this, tr("File error"), tr("Please select a valid path"));
+        return;
+    }
 
-private slots:
-    void on_pushButtonOpenJsonReportFileName_clicked();
-    void on_pushButtonOpenNVDDbFileName_clicked();
-
-private:
-    Ui::DialogImportCVEReport *ui;
-    QString jsonReportFileName;
-    QString NVDDBFileName;
-};
-
-#endif // DIALOGIMPORTCVEREPORT_H
+    done(DialogCode::Accepted);
+    close();
+}

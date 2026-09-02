@@ -1,7 +1,7 @@
 /*!
    QCVECheckReport project
 
-   @file: mdisubwindow.cpp
+   @file: mdireport.cpp
 
    @author: Raffaele de Cicco <decicco.raffaele@gmail.com>
 
@@ -25,8 +25,8 @@
    limitations under the License.
  */
 
-#include "mdisubwindow.h"
-#include "ui_mdisubwindow.h"
+#include "mdireport.h"
+#include "ui_mdireport.h"
 #include <QResizeEvent>
 #include <QScrollBar>
 #include <QThread>
@@ -76,10 +76,10 @@
 #define CVSSScoreWidth 100
 #define VectorWidth 180
 
-MdiSubWindow::MdiSubWindow(const QString &fileName, QSQLiteManager* sqlManager, QWidget *parent):
+MdiReport::MdiReport(const QString &fileName, QSQLiteManager* sqlManager, QWidget *parent):
     QMdiSubWindow(parent), reportFile(fileName), sqliteManager(sqlManager),
     packagesTableMutex(new QMutex()), cvesTableMutex(new QMutex()), ignoredCVEsTableMutex(new QMutex()),
-    ui(new Ui::MdiSubWindow)
+    ui(new Ui::MdiReport)
 {
     ui->setupUi(this);
 
@@ -129,7 +129,7 @@ MdiSubWindow::MdiSubWindow(const QString &fileName, QSQLiteManager* sqlManager, 
     setComboBoxCVEPackages();
 }
 
-MdiSubWindow::~MdiSubWindow()
+MdiReport::~MdiReport()
 {
     disconnect(SIGNAL(packagesTableViewDataUpdated(QModelIndex,QModelIndex)), this, SLOT(refreshPackagesTableView(QModelIndex,QModelIndex)));
     disconnect(SIGNAL(cvesTableViewDataUpdated(QModelIndex,QModelIndex)), this, SLOT(refreshCVEsTableView(QModelIndex,QModelIndex)));
@@ -142,7 +142,7 @@ MdiSubWindow::~MdiSubWindow()
     delete ignoredCVEsTableMutex;
 }
 
-void MdiSubWindow::scrollToGroupBox(GroupBoxEnum groupBox)
+void MdiReport::scrollToGroupBox(GroupBoxEnum groupBox)
 {
     switch (groupBox)
     {
@@ -164,7 +164,7 @@ void MdiSubWindow::scrollToGroupBox(GroupBoxEnum groupBox)
     }
 }
 
-void MdiSubWindow::resizeEvent(QResizeEvent *ev)
+void MdiReport::resizeEvent(QResizeEvent *ev)
 {
     ui->scrollArea->move(10,40);
     ui->scrollArea->resize(ev->size() - QSize(20, 60));
@@ -183,14 +183,14 @@ void MdiSubWindow::resizeEvent(QResizeEvent *ev)
     resizeAllTables();
 }
 
-void MdiSubWindow::resizeAllTables()
+void MdiReport::resizeAllTables()
 {
     resizePackagesTableView();
     resizeCVEsTableView();
     resizeIgnoredCVEsTableView();
 }
 
-void MdiSubWindow::resizePackagesTableView()
+void MdiReport::resizePackagesTableView()
 {
     if (packagesTableView && packagesTableView->getModel() && packagesTableView->getModel()->columnCount())
     {
@@ -209,7 +209,7 @@ void MdiSubWindow::resizePackagesTableView()
     }
 }
 
-void MdiSubWindow::resizeCVEsTableView()
+void MdiReport::resizeCVEsTableView()
 {
     if (cvesTableView && cvesTableView->getModel() && cvesTableView->getModel()->columnCount())
     {
@@ -225,7 +225,7 @@ void MdiSubWindow::resizeCVEsTableView()
     }
 }
 
-void MdiSubWindow::resizeIgnoredCVEsTableView()
+void MdiReport::resizeIgnoredCVEsTableView()
 {
     if (ignoredCVEsTableView && ignoredCVEsTableView->getModel() && ignoredCVEsTableView->getModel()->columnCount())
     {
@@ -241,7 +241,7 @@ void MdiSubWindow::resizeIgnoredCVEsTableView()
     }
 }
 
-bool MdiSubWindow::packagesKeysComparison(const AbstractDTO::SharedDTO &package1, const AbstractDTO::SharedDTO &package2)
+bool MdiReport::packagesKeysComparison(const AbstractDTO::SharedDTO &package1, const AbstractDTO::SharedDTO &package2)
 {
     const PackageDTO* packageDTO1 = static_cast<const PackageDTO*>(package1.get());
     const PackageDTO* packageDTO2 = static_cast<const PackageDTO*>(package2.get());
@@ -261,7 +261,7 @@ bool MdiSubWindow::packagesKeysComparison(const AbstractDTO::SharedDTO &package1
     return false;
 }
 
-void MdiSubWindow::setComboBoxCVEPackages()
+void MdiReport::setComboBoxCVEPackages()
 {
     ui->comboBoxCVEsPackages->addItem("All", 0);
     const CVEReportDTO& reportDTO = reportData->getFullCVEReport();
@@ -279,7 +279,7 @@ void MdiSubWindow::setComboBoxCVEPackages()
     }
 }
 
-void MdiSubWindow::LoadReportData()
+void MdiReport::LoadReportData()
 {
     try
     {
@@ -411,7 +411,7 @@ void MdiSubWindow::LoadReportData()
     }
 }
 
-void MdiSubWindow::executeSelectPackages(bool search)
+void MdiReport::executeSelectPackages(bool search)
 {
     static QMutex m;
 
@@ -451,7 +451,7 @@ void MdiSubWindow::executeSelectPackages(bool search)
     }
 }
 
-void MdiSubWindow::executeSelectPackagesFinished()
+void MdiReport::executeSelectPackagesFinished()
 {
     execSelectPackages->moveToThread(QThread::currentThread());
     disconnect(execSelectPackages, SIGNAL(finished()), this, SLOT(executeSelectPackagesFinished()));
@@ -463,7 +463,7 @@ void MdiSubWindow::executeSelectPackagesFinished()
     emit packagesTableViewDataUpdated(startIndexCell, endIndexCell);
 }
 
-void MdiSubWindow::selectPackages(QMutex* packagesTableMutex, ReportData* reportData, Ui::MdiSubWindow* ui, QSqlTableView* packagesTableView, bool search)
+void MdiReport::selectPackages(QMutex* packagesTableMutex, ReportData* reportData, Ui::MdiReport* ui, QSqlTableView* packagesTableView, bool search)
 {
     QMutexLocker locker(packagesTableMutex);
     if (reportData)
@@ -487,7 +487,7 @@ void MdiSubWindow::selectPackages(QMutex* packagesTableMutex, ReportData* report
     }
 }
 
-void MdiSubWindow::refreshPackagesTableView(const QModelIndex &indexA, const QModelIndex &indexB)
+void MdiReport::refreshPackagesTableView(const QModelIndex &indexA, const QModelIndex &indexB)
 {
     packagesTableView->updateStandardItemModel(indexA, indexB);
     QStandardItemModel* model = packagesTableView->getModel();
@@ -506,37 +506,37 @@ void MdiSubWindow::refreshPackagesTableView(const QModelIndex &indexA, const QMo
     resizePackagesTableView();
 }
 
-void MdiSubWindow::on_checkBoxOnlyUnfixedPackages_stateChanged(int state)
+void MdiReport::on_checkBoxOnlyUnfixedPackages_stateChanged(int state)
 {
     ui->spinBoxPackagesPage->setValue(1);
     executeSelectPackages();
 }
 
-void MdiSubWindow::on_comboBoxShowPackages_currentIndexChanged(int index)
+void MdiReport::on_comboBoxShowPackages_currentIndexChanged(int index)
 {
     ui->spinBoxPackagesPage->setValue(1);
     executeSelectPackages();
 }
 
-void MdiSubWindow::on_pushButtonSearchPackages_clicked()
+void MdiReport::on_pushButtonSearchPackages_clicked()
 {
     ui->spinBoxPackagesPage->setValue(1);
     executeSelectPackages();
 }
 
-void MdiSubWindow::on_spinBoxPackagesPage_valueChanged(int value)
+void MdiReport::on_spinBoxPackagesPage_valueChanged(int value)
 {
     executeSelectPackages();
 }
 
-void MdiSubWindow::on_pushButtonClearSearchPackages_clicked()
+void MdiReport::on_pushButtonClearSearchPackages_clicked()
 {
     ui->lineEditSearchPackages->clear();
     ui->spinBoxPackagesPage->setValue(1);
     executeSelectPackages(false);
 }
 
-void MdiSubWindow::executeSelectCVEs(bool search)
+void MdiReport::executeSelectCVEs(bool search)
 {
     static QMutex m;
 
@@ -576,7 +576,7 @@ void MdiSubWindow::executeSelectCVEs(bool search)
     }
 }
 
-void MdiSubWindow::executeSelectCVEsFinished()
+void MdiReport::executeSelectCVEsFinished()
 {
     execSelectCVEs->moveToThread(QThread::currentThread());
     disconnect(execSelectCVEs, SIGNAL(finished()), this, SLOT(executeSelectCVEsFinished()));
@@ -588,7 +588,7 @@ void MdiSubWindow::executeSelectCVEsFinished()
     emit cvesTableViewDataUpdated(startIndexCell, endIndexCell);
 }
 
-void MdiSubWindow::selectCVEs(QMutex* cvesTableMutex, ReportData* reportData, Ui::MdiSubWindow* ui, QSqlTableView* cvesTableView, bool search)
+void MdiReport::selectCVEs(QMutex* cvesTableMutex, ReportData* reportData, Ui::MdiReport* ui, QSqlTableView* cvesTableView, bool search)
 {
     QMutexLocker locker(cvesTableMutex);
     if (reportData)
@@ -615,7 +615,7 @@ void MdiSubWindow::selectCVEs(QMutex* cvesTableMutex, ReportData* reportData, Ui
     }
 }
 
-void MdiSubWindow::refreshCVEsTableView(const QModelIndex& indexA, const QModelIndex& indexB)
+void MdiReport::refreshCVEsTableView(const QModelIndex& indexA, const QModelIndex& indexB)
 {
     cvesTableView->updateStandardItemModel(indexA, indexB);
     QStandardItemModel* model = cvesTableView->getModel();
@@ -637,7 +637,7 @@ void MdiSubWindow::refreshCVEsTableView(const QModelIndex& indexA, const QModelI
     resizeCVEsTableView();
 }
 
-void MdiSubWindow::cvesTableViewClicked(const QModelIndex &index)
+void MdiReport::cvesTableViewClicked(const QModelIndex &index)
 {
     if (index.column() == CVEsLinkColumnIndex)
     {
@@ -648,55 +648,55 @@ void MdiSubWindow::cvesTableViewClicked(const QModelIndex &index)
     }
 }
 
-void MdiSubWindow::on_comboBoxCVEsPackages_currentIndexChanged(int index)
+void MdiReport::on_comboBoxCVEsPackages_currentIndexChanged(int index)
 {
     ui->spinBoxCVEsPage->setValue(1);
     executeSelectCVEs();
 }
 
-void MdiSubWindow::on_comboBoxCVEsStatus_currentIndexChanged(int index)
+void MdiReport::on_comboBoxCVEsStatus_currentIndexChanged(int index)
 {
     ui->spinBoxCVEsPage->setValue(1);
     executeSelectCVEs();
 }
 
-void MdiSubWindow::on_comboBoxCVEsAttackVector_currentIndexChanged(int index)
+void MdiReport::on_comboBoxCVEsAttackVector_currentIndexChanged(int index)
 {
     ui->spinBoxCVEsPage->setValue(1);
     executeSelectCVEs();
 }
 
-void MdiSubWindow::on_comboBoxCVEsMinimumCVSS_currentIndexChanged(int index)
+void MdiReport::on_comboBoxCVEsMinimumCVSS_currentIndexChanged(int index)
 {
     ui->spinBoxCVEsPage->setValue(1);
     executeSelectCVEs();
 }
 
-void MdiSubWindow::on_comboBoxShowCVEs_currentIndexChanged(int index)
+void MdiReport::on_comboBoxShowCVEs_currentIndexChanged(int index)
 {
     ui->spinBoxCVEsPage->setValue(1);
     executeSelectCVEs();
 }
 
-void MdiSubWindow::on_pushButtonSearchCVEs_clicked()
+void MdiReport::on_pushButtonSearchCVEs_clicked()
 {
     ui->spinBoxCVEsPage->setValue(1);
     executeSelectCVEs();
 }
 
-void MdiSubWindow::on_pushButtonClearSearchCVEs_clicked()
+void MdiReport::on_pushButtonClearSearchCVEs_clicked()
 {
     ui->lineEditSearchCVEs->clear();
     ui->spinBoxCVEsPage->setValue(1);
     executeSelectCVEs(false);
 }
 
-void MdiSubWindow::on_spinBoxCVEsPage_valueChanged(int index)
+void MdiReport::on_spinBoxCVEsPage_valueChanged(int index)
 {
     executeSelectCVEs();
 }
 
-void MdiSubWindow::executeSelectIgnoredCVEs(bool search)
+void MdiReport::executeSelectIgnoredCVEs(bool search)
 {
     static QMutex m;
 
@@ -735,7 +735,7 @@ void MdiSubWindow::executeSelectIgnoredCVEs(bool search)
     }
 }
 
-void MdiSubWindow::executeSelectIgnoredCVEsFinished()
+void MdiReport::executeSelectIgnoredCVEsFinished()
 {
     execSelectIgnoreCVEs->moveToThread(QThread::currentThread());
     disconnect(execSelectIgnoreCVEs, SIGNAL(finished()), this, SLOT(executeSelectIgnoredCVEsFinished()));
@@ -747,7 +747,7 @@ void MdiSubWindow::executeSelectIgnoredCVEsFinished()
     emit ignoredCVEsTableViewDataUpdated(startIndexCell, endIndexCell);
 }
 
-void MdiSubWindow::selectIgnoredCVEs(QMutex* ignoredCVEsTableMutex, ReportData* reportData, Ui::MdiSubWindow* ui, QSqlTableView* ignoredCVEsTableView, bool search)
+void MdiReport::selectIgnoredCVEs(QMutex* ignoredCVEsTableMutex, ReportData* reportData, Ui::MdiReport* ui, QSqlTableView* ignoredCVEsTableView, bool search)
 {
     QMutexLocker locker(ignoredCVEsTableMutex);
     if (reportData)
@@ -770,7 +770,7 @@ void MdiSubWindow::selectIgnoredCVEs(QMutex* ignoredCVEsTableMutex, ReportData* 
     }
 }
 
-void MdiSubWindow::refreshIgnoredCVEsTableView(const QModelIndex &indexA, const QModelIndex &indexB)
+void MdiReport::refreshIgnoredCVEsTableView(const QModelIndex &indexA, const QModelIndex &indexB)
 {
     ignoredCVEsTableView->updateStandardItemModel(indexA, indexB);
     QStandardItemModel* model = ignoredCVEsTableView->getModel();
@@ -789,7 +789,7 @@ void MdiSubWindow::refreshIgnoredCVEsTableView(const QModelIndex &indexA, const 
     resizeIgnoredCVEsTableView();
 }
 
-void MdiSubWindow::ignoredCVEsTableViewClicked(const QModelIndex &index)
+void MdiReport::ignoredCVEsTableViewClicked(const QModelIndex &index)
 {
     if (index.column() == IgnoredCVEsLinkColumnIndex)
     {
@@ -800,26 +800,26 @@ void MdiSubWindow::ignoredCVEsTableViewClicked(const QModelIndex &index)
     }
 }
 
-void MdiSubWindow::on_comboBoxShowIgnoredCVEs_currentIndexChanged(int index)
+void MdiReport::on_comboBoxShowIgnoredCVEs_currentIndexChanged(int index)
 {
     ui->spinBoxIgnoredCVEsPage->setValue(1);
     executeSelectIgnoredCVEs();
 }
 
-void MdiSubWindow::on_pushButtonSearchIgnoredCVEs_clicked()
+void MdiReport::on_pushButtonSearchIgnoredCVEs_clicked()
 {
     ui->spinBoxIgnoredCVEsPage->setValue(1);
     executeSelectIgnoredCVEs();
 }
 
-void MdiSubWindow::on_pushButtonClearSearchIgnoredCVEe_clicked()
+void MdiReport::on_pushButtonClearSearchIgnoredCVEe_clicked()
 {
     ui->lineEditSearchIgnoredCVEs->clear();
     ui->spinBoxIgnoredCVEsPage->setValue(1);
     executeSelectIgnoredCVEs(false);
 }
 
-void MdiSubWindow::on_spinBoxIgnoredCVEsPage_valueChanged(int index)
+void MdiReport::on_spinBoxIgnoredCVEsPage_valueChanged(int index)
 {
     executeSelectIgnoredCVEs();
 }

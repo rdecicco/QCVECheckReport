@@ -209,8 +209,8 @@ private:
     bool CalculateSummary();
     QPdfWriter* pdfWriter;    
     QString setStyleSheet();
-    QString getHtmlHeader();
-    QString getHtmlBody();
+    QString getHtmlReportHeader();
+    QString getHtmlReportBody();
     QString getHtmlReportGeneralInformation();
     QString getHtmlReportSummary();
     QString getHtmlReportPackages();

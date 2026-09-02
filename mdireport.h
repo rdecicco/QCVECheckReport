@@ -1,7 +1,7 @@
 /*!
    QCVECheckReport project
 
-   @file: mdisubwindow.h
+   @file: MdiReport.h
 
    @author: Raffaele de Cicco <decicco.raffaele@gmail.com>
 
@@ -25,8 +25,8 @@
    limitations under the License.
  */
 
-#ifndef MDISUBWINDOW_H
-#define MDISUBWINDOW_H
+#ifndef MDIREPORT_H
+#define MDIREPORT_H
 
 #include "qsqltableview.h"
 #include "reportdata.h"
@@ -35,10 +35,10 @@
 #include <QtCharts/QtCharts>
 
 namespace Ui {
-class MdiSubWindow;
+class MdiReport;
 }
 
-class MdiSubWindow : public QMdiSubWindow
+class MdiReport : public QMdiSubWindow
 {
     Q_OBJECT
 
@@ -52,15 +52,15 @@ public:
         IgnoredCVEs
     };
 
-    explicit MdiSubWindow(const QString& fileName = QString(), QSQLiteManager *sqlManager = nullptr, QWidget *parent = nullptr);
-    ~MdiSubWindow();
+    explicit MdiReport(const QString& fileName = QString(), QSQLiteManager *sqlManager = nullptr, QWidget *parent = nullptr);
+    ~MdiReport();
 
     void LoadReportData();
 
     void scrollToGroupBox(GroupBoxEnum groupBox);
 
 private:
-    Ui::MdiSubWindow *ui;
+    Ui::MdiReport *ui;
     QString reportFile;
     QSQLiteManager* sqliteManager = nullptr;
     QSharedPointer<ReportData> reportData;
@@ -100,9 +100,9 @@ signals:
     void ignoredCVEsTableViewDataUpdated(const QModelIndex &indexA, const QModelIndex &indexB);
 
 protected slots:
-    static void selectPackages(QMutex* packagesTableMutex, ReportData* reportData, Ui::MdiSubWindow* ui, QSqlTableView* packagesTableView, bool search = true);
-    static void selectCVEs(QMutex* cvesTableMutex, ReportData* reportData, Ui::MdiSubWindow* ui, QSqlTableView* cvesTableView, bool search = true);
-    static void selectIgnoredCVEs(QMutex* ignoredCVEsTableMutex, ReportData* reportData, Ui::MdiSubWindow* ui, QSqlTableView* ignoredCVEsTableView, bool search = true);
+    static void selectPackages(QMutex* packagesTableMutex, ReportData* reportData, Ui::MdiReport* ui, QSqlTableView* packagesTableView, bool search = true);
+    static void selectCVEs(QMutex* cvesTableMutex, ReportData* reportData, Ui::MdiReport* ui, QSqlTableView* cvesTableView, bool search = true);
+    static void selectIgnoredCVEs(QMutex* ignoredCVEsTableMutex, ReportData* reportData, Ui::MdiReport* ui, QSqlTableView* ignoredCVEsTableView, bool search = true);
 
     void refreshPackagesTableView(const QModelIndex &indexA, const QModelIndex &indexB);
     void refreshCVEsTableView(const QModelIndex &indexA, const QModelIndex &indexB);
@@ -135,4 +135,4 @@ private slots:
     void on_spinBoxCVEsPage_valueChanged(int index);
 };
 
-#endif // MDISUBWINDOW_H
+#endif // MDIREPORT_H

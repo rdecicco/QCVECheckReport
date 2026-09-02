@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>DialogImportCVEReport</class>
- <widget class="QDialog" name="DialogImportCVEReport">
+ <class>DialogImportSBOMCVEReport</class>
+ <widget class="QDialog" name="DialogImportSBOMCVEReport">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -48,7 +48,14 @@
       <number>12</number>
      </property>
      <item row="2" column="0">
-      <widget class="QLineEdit" name="lineEditNVDDBFileName"/>
+      <widget class="QLineEdit" name="lineEditNVDJsonRepositoryPath"/>
+     </item>
+     <item row="3" column="2">
+      <widget class="QPushButton" name="pushButtonOpenCVEJsonRepoPath">
+       <property name="text">
+        <string>CVE Json Repo...</string>
+       </property>
+      </widget>
      </item>
      <item row="0" column="2">
       <widget class="QPushButton" name="pushButtonOpenJsonReportFileName">
@@ -57,15 +64,18 @@
        </property>
       </widget>
      </item>
+     <item row="2" column="2">
+      <widget class="QPushButton" name="pushButtonOpenNVDJsonRepoPath">
+       <property name="text">
+        <string>NVD Json Repo...</string>
+       </property>
+      </widget>
+     </item>
      <item row="0" column="0">
       <widget class="QLineEdit" name="lineEditJsonReportFileName"/>
      </item>
-     <item row="2" column="2">
-      <widget class="QPushButton" name="pushButtonOpenNVDDbFileName">
-       <property name="text">
-        <string>NVD DB...</string>
-       </property>
-      </widget>
+     <item row="3" column="0">
+      <widget class="QLineEdit" name="lineEditCVEJsonRepositoryPath"/>
      </item>
     </layout>
    </item>
@@ -74,15 +84,17 @@
  <tabstops>
   <tabstop>lineEditJsonReportFileName</tabstop>
   <tabstop>pushButtonOpenJsonReportFileName</tabstop>
-  <tabstop>lineEditNVDDBFileName</tabstop>
-  <tabstop>pushButtonOpenNVDDbFileName</tabstop>
+  <tabstop>lineEditNVDJsonRepositoryPath</tabstop>
+  <tabstop>pushButtonOpenNVDJsonRepoPath</tabstop>
+  <tabstop>lineEditCVEJsonRepositoryPath</tabstop>
+  <tabstop>pushButtonOpenCVEJsonRepoPath</tabstop>
  </tabstops>
  <resources/>
  <connections>
   <connection>
    <sender>buttonBox</sender>
    <signal>accepted()</signal>
-   <receiver>DialogImportCVEReport</receiver>
+   <receiver>DialogImportSBOMCVEReport</receiver>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -98,7 +110,7 @@
   <connection>
    <sender>buttonBox</sender>
    <signal>rejected()</signal>
-   <receiver>DialogImportCVEReport</receiver>
+   <receiver>DialogImportSBOMCVEReport</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">

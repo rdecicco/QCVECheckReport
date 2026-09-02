@@ -26,10 +26,10 @@
  */
 
 #include "qcvecheckapp.h"
-#include "./ui_qcvecheckapp.h"
-#include "dialogimportcvedb.h"
+#include "ui_qcvecheckapp.h"
+#include "dialogimportnvddb.h"
 #include "mdicvedata.h"
-#include "mdisubwindow.h"
+#include "mdireport.h"
 #include "ui_qcvecheckapp.h"
 #include <QFileDialog>
 #include <QJsonDocument>
@@ -49,13 +49,17 @@ QCVECheckApp::QCVECheckApp(QWidget *parent)
     ui->setupUi(this);
     UpdateCVEReportsComboBox();
     connect(this, SIGNAL(importJsonCVEReportFinished(QString)), this, SLOT(jsonCVEReportImported(QString)), Qt::QueuedConnection);
-    connect(this, SIGNAL(importCVEDBFinished()), this, SLOT(CVEDBImported()), Qt::QueuedConnection);
+    connect(this, SIGNAL(importNVDDBFinished()), this, SLOT(NVDDBImported()), Qt::QueuedConnection);
+    connect(this, SIGNAL(importNVDJsonRepoFinished()), this, SLOT(NVDJsonRepoImported()), Qt::QueuedConnection);
+    connect(this, SIGNAL(importCVEJsonRepoFinished()), this, SLOT(CVEJsonRepoImported()), Qt::QueuedConnection);
 }
 
 QCVECheckApp::~QCVECheckApp()
 {
     disconnect(this, SIGNAL(importJsonCVEReportFinished(QString)), this, SLOT(jsonCVEReportImported(QString)));
-    disconnect(this, SIGNAL(importCVEDBFinished()), this, SLOT(CVEDBImported()));
+    disconnect(this, SIGNAL(importNVDDBFinished()), this, SLOT(NVDDBImported()));
+    disconnect(this, SIGNAL(importNVDJsonRepoFinished()), this, SLOT(NVDJsonRepoImported()));
+    disconnect(this, SIGNAL(importCVEJsonRepoFinished()), this, SLOT(CVEJsonRepoImported()));
     delete sqliteDBManager;
     delete ui;
     delete mdiCVEDataMutex;
@@ -82,47 +86,54 @@ void QCVECheckApp::UpdateCVEReportsComboBox()
     ui->comboBoxReports->addItems(jsonCVEReportsList);
 }
 
-void QCVECheckApp::importCVEReport(QCVECheckApp* parent, const QString& jsonReportFileName, const QString& CVEDBFileName)
+void QCVECheckApp::importCVECheckReport(QCVECheckApp* parent, const QString& jsonReportFileName, const QString& NVDDBFileName)
 {
     try
     {
         parent->setCursor(Qt::CursorShape::WaitCursor);
 
-        if (!QFile::exists(CVEDBFileName) || !QFile::exists(jsonReportFileName))
+        if (!QFile::exists(NVDDBFileName) || !QFile::exists(jsonReportFileName))
         {
-            QMessageBox::critical(nullptr, tr("Open Json Report Error"), tr("Not valid file name"));
+            QMessageBox::critical(nullptr, tr("Open CVE Json Report Error"), tr("Not valid file name"));
+            parent->setCursor(Qt::CursorShape::ArrowCursor);
             return;
         }
 
         if (!parent->sqliteDBManager->isNewReport(jsonReportFileName))
         {
-            QMessageBox::critical(nullptr, tr("Import Json Report Error"), tr("Report already imported"));
+            QMessageBox::critical(nullptr, tr("Import CVE Json Report Error"), tr("Report already imported"));
+            parent->setCursor(Qt::CursorShape::ArrowCursor);
             return;
         }
 
-        if (!parent->sqliteDBManager->importCVEDb(CVEDBFileName))
+        if (!parent->sqliteDBManager->importNVDDb(NVDDBFileName))
         {
-            QMessageBox::critical(nullptr, tr("Import CVE DB Error"), tr("Import of CVE DB Failed"));
+            QMessageBox::critical(nullptr, tr("Import NVD DB Error"), tr("Import of NVD DB Failed"));
+            parent->setCursor(Qt::CursorShape::ArrowCursor);
             return;
         }
 
         if (!parent->jsonCVEReportManager.open(jsonReportFileName))
         {
-            QMessageBox::critical(nullptr, tr("Open Json Report Error"), tr("Not valid CVE Report"));
+            QMessageBox::critical(nullptr, tr("Open CVE Json Report Error"), tr("Not valid CVE Report"));
+            parent->setCursor(Qt::CursorShape::ArrowCursor);
             return;
         }
 
-        if (!parent->sqliteDBManager->importJson(jsonReportFileName, parent->jsonCVEReportManager.getJsonDocument()))
+        if (!parent->sqliteDBManager->importCVEJsonReport(jsonReportFileName, parent->jsonCVEReportManager.getJsonDocument()))
         {
+            parent->setCursor(Qt::CursorShape::ArrowCursor);
             return;
         }
 
         emit parent->importJsonCVEReportFinished(jsonReportFileName);
-        QMessageBox::information(nullptr, tr("Import Json Report"), tr("Import of CSV Report Successfully Executed"));
+        QMessageBox::information(nullptr, tr("Import CVE Json Report"), tr("Import of CVE Report Successfully Executed"));
+        parent->setCursor(Qt::CursorShape::ArrowCursor);
     }
     catch (QException ex)
     {
         QMessageBox::critical(nullptr, tr("Error"), ex.what());
+        parent->setCursor(Qt::CursorShape::ArrowCursor);
     }
 }
 
@@ -130,16 +141,14 @@ void QCVECheckApp::jsonCVEReportImported(const QString &jsonReportFileName)
 {
     try
     {
-        setCursor(Qt::CursorShape::ArrowCursor);
-
         UpdateCVEReportsComboBox();
         ui->comboBoxReports->setCurrentIndex(jsonCVEReportsList.indexOf(QFileInfo(jsonReportFileName).fileName()));
 
         {
             QMutexLocker locker(subWindowMapMutex);
-            for (auto& mdiWindow : subWindowsMap)
+            for (auto& mdiReportWindow : reportMap)
             {
-                mdiWindow->LoadReportData();
+                mdiReportWindow->LoadReportData();
             }
         }
 
@@ -157,7 +166,7 @@ void QCVECheckApp::jsonCVEReportImported(const QString &jsonReportFileName)
     }
 }
 
-void QCVECheckApp::on_action_Open_triggered()
+void QCVECheckApp::on_action_Import_CVE_Check_Report_triggered()
 {
     try
     {
@@ -165,7 +174,7 @@ void QCVECheckApp::on_action_Open_triggered()
         QDialog::DialogCode returnValue = (QDialog::DialogCode)dialogImportCVEReport->exec();
         if (returnValue == QDialog::DialogCode::Accepted)
         {
-            QString CVEDBFileName = dialogImportCVEReport->getCVEDbFileName();
+            QString NVDDBFileName = dialogImportCVEReport->getNVDDbFileName();
             QString jsonReportFileName = dialogImportCVEReport->getJsonReportFileName();
 
             if (importCVEReportThread != nullptr)
@@ -175,7 +184,7 @@ void QCVECheckApp::on_action_Open_triggered()
                 importCVEReportThread = nullptr;
             }
 
-            importCVEReportThread = QThread::create(importCVEReport, this, jsonReportFileName, CVEDBFileName);
+            importCVEReportThread = QThread::create(importCVECheckReport, this, jsonReportFileName, NVDDBFileName);
             importCVEReportThread->start();
         }
     }
@@ -190,52 +199,145 @@ void QCVECheckApp::on_action_Open_triggered()
     }
 }
 
-void QCVECheckApp::importCVEDB(QCVECheckApp *parent, const QString& CVEDBFileName)
+void QCVECheckApp::importSBOMCVECheckReport(QCVECheckApp* parent, const QString& jsonReportFileName, const QString& NVDJsonRepoPath,  const QString& CVEJsonRepoPath)
 {
     try
     {
         parent->setCursor(Qt::CursorShape::WaitCursor);
 
-        if (!QFile::exists(CVEDBFileName))
+        if (!QFile::exists(jsonReportFileName) || (!QFile::exists(NVDJsonRepoPath) && !QFile::exists(CVEJsonRepoPath)))
         {
-            QMessageBox::critical(nullptr, tr("Import CVE DB Error"), tr("Not valid file name"));
+            QMessageBox::critical(nullptr, tr("Open SBOM CVE Json Report Error"), tr("Not valid file name or path"));
+            parent->setCursor(Qt::CursorShape::ArrowCursor);
             return;
         }
 
-        if (parent->sqliteDBManager->importCVEDb(CVEDBFileName))
+        if (!parent->sqliteDBManager->isNewReport(jsonReportFileName))
         {
-            emit parent->importCVEDBFinished();
-            QMessageBox::information(nullptr, tr("Import CVE DB"), tr("Import of CVE DB Successfully Executed"));
+            QMessageBox::critical(nullptr, tr("Import SBOM CVE Json Report Error"), tr("Report already imported"));
+            parent->setCursor(Qt::CursorShape::ArrowCursor);
+            return;
         }
-        else
+
+        if (!NVDJsonRepoPath.isEmpty() && !parent->sqliteDBManager->importNVDJsonRepo(NVDJsonRepoPath))
         {
-            QMessageBox::critical(nullptr, tr("Import CVE DB Error"), tr("Import of CVE DB Failed"));
-        }        
+            QMessageBox::critical(nullptr, tr("Import NVD Json Repository Error"), tr("Import of NVD Json Repository Failed"));
+            parent->setCursor(Qt::CursorShape::ArrowCursor);
+            return;
+        }
+
+        if (!CVEJsonRepoPath.isEmpty() && !parent->sqliteDBManager->importCVEJsonRepo(CVEJsonRepoPath))
+        {
+            QMessageBox::critical(nullptr, tr("Import CVE Json Repository Error"), tr("Import of CVE Json Repository Failed"));
+            parent->setCursor(Qt::CursorShape::ArrowCursor);
+            return;
+        }
+
+        if (!parent->jsonCVEReportManager.open(jsonReportFileName))
+        {
+            QMessageBox::critical(nullptr, tr("Open CVE Json Report Error"), tr("Not valid CVE Report"));
+            parent->setCursor(Qt::CursorShape::ArrowCursor);
+            return;
+        }
+
+        if (!parent->sqliteDBManager->importSBOMCVEJsonReport(jsonReportFileName, parent->jsonCVEReportManager.getJsonDocument()))
+        {
+            parent->setCursor(Qt::CursorShape::ArrowCursor);
+            return;
+        }
+
+        emit parent->importJsonCVEReportFinished(jsonReportFileName);
+        QMessageBox::information(nullptr, tr("Import Json Report"), tr("Import of CSV Report Successfully Executed"));
+        parent->setCursor(Qt::CursorShape::ArrowCursor);
     }
     catch (QException ex)
     {
         QMessageBox::critical(nullptr, tr("Error"), ex.what());
+        parent->setCursor(Qt::CursorShape::ArrowCursor);
     }
 }
 
-void QCVECheckApp::CVEDBImported()
+void QCVECheckApp::on_action_Import_SBOM_CVE_Check_Report_triggered()
 {
     try
     {
-        setCursor(Qt::CursorShape::ArrowCursor);
-
-        if (importCVEDbThread != nullptr)
+        dialogImportSBOMCVEReport = new DialogImportSBOMCVEReport(this);
+        QDialog::DialogCode returnValue = (QDialog::DialogCode)dialogImportSBOMCVEReport->exec();
+        if (returnValue == QDialog::DialogCode::Accepted)
         {
-            importCVEDbThread->exit();
-            delete importCVEDbThread;
-            importCVEDbThread = nullptr;
+            QString jsonReportFileName = dialogImportSBOMCVEReport->getJsonReportFileName();
+            QString NVDJsonRepoPath = dialogImportSBOMCVEReport->getNVDJsonRepoPath();
+            QString CVEJsonRepoPath = dialogImportSBOMCVEReport->getCVEJsonRepoPath();
+
+            if (importSBOMCVEReportThread != nullptr)
+            {
+                importSBOMCVEReportThread->exit();
+                delete importSBOMCVEReportThread;
+                importSBOMCVEReportThread = nullptr;
+            }
+
+            importSBOMCVEReportThread = QThread::create(importSBOMCVECheckReport, this, jsonReportFileName, NVDJsonRepoPath, CVEJsonRepoPath);
+            importSBOMCVEReportThread->start();
+        }
+    }
+    catch (QException ex)
+    {
+        QMessageBox::critical(this, tr("Error"), ex.what());
+    }
+
+    if (dialogImportSBOMCVEReport != nullptr)
+    {
+        dialogImportSBOMCVEReport->close();
+    }
+}
+
+void QCVECheckApp::importNVDDB(QCVECheckApp *parent, const QString& NVDDBFileName)
+{
+    try
+    {
+        parent->setCursor(Qt::CursorShape::WaitCursor);
+
+        if (!QFile::exists(NVDDBFileName))
+        {
+            QMessageBox::critical(nullptr, tr("Import NVD DB Error"), tr("Not valid file name"));
+            parent->setCursor(Qt::CursorShape::ArrowCursor);
+            return;
+        }
+
+        if (parent->sqliteDBManager->importNVDDb(NVDDBFileName))
+        {
+            emit parent->importNVDDBFinished();
+            QMessageBox::information(nullptr, tr("Import NVD DB"), tr("Import of NVD DB Successfully Executed"));
+        }
+        else
+        {
+            QMessageBox::critical(nullptr, tr("Import NVD DB Error"), tr("Import of NVD DB Failed"));
+        }
+        parent->setCursor(Qt::CursorShape::ArrowCursor);
+    }
+    catch (QException ex)
+    {
+        QMessageBox::critical(nullptr, tr("Error"), ex.what());
+        parent->setCursor(Qt::CursorShape::ArrowCursor);
+    }
+}
+
+void QCVECheckApp::NVDDBImported()
+{
+    try
+    {
+        if (importNVDDbThread != nullptr)
+        {
+            importNVDDbThread->exit();
+            delete importNVDDbThread;
+            importNVDDbThread = nullptr;
         }
 
         {
             QMutexLocker locker(subWindowMapMutex);
-            for (auto& mdiWindow : subWindowsMap)
+            for (auto& mdiReportWindow : reportMap)
             {
-                mdiWindow->LoadReportData();
+                mdiReportWindow->LoadReportData();
             }
         }
 
@@ -253,25 +355,25 @@ void QCVECheckApp::CVEDBImported()
     }
 }
 
-void QCVECheckApp::on_actionImport_CVE_DB_triggered()
+void QCVECheckApp::on_action_Import_NVD_DB_triggered()
 {
     try
     {
-        dialogImportCVEDB = new DialogImportCVEDB(this);
-        QDialog::DialogCode returnValue = (QDialog::DialogCode)dialogImportCVEDB->exec();
+        dialogImportNVDDB = new DialogImportNVDDB(this);
+        QDialog::DialogCode returnValue = (QDialog::DialogCode)dialogImportNVDDB->exec();
         if (returnValue == QDialog::DialogCode::Accepted)
         {
-            QString CVEDBFileName = dialogImportCVEDB->getCVEDbFileName();
+            QString NVDDBFileName = dialogImportNVDDB->getNVDDbFileName();
 
-            if (importCVEDbThread != nullptr)
+            if (importNVDDbThread != nullptr)
             {
-                importCVEDbThread->exit();
-                delete importCVEDbThread;
-                importCVEDbThread = nullptr;
+                importNVDDbThread->exit();
+                delete importNVDDbThread;
+                importNVDDbThread = nullptr;
             }
 
-            importCVEDbThread = QThread::create(importCVEDB, this, CVEDBFileName);
-            importCVEDbThread->start();
+            importNVDDbThread = QThread::create(importNVDDB, this, NVDDBFileName);
+            importNVDDbThread->start();
         }
     }
     catch (QException ex)
@@ -279,9 +381,200 @@ void QCVECheckApp::on_actionImport_CVE_DB_triggered()
         QMessageBox::critical(this, tr("Error"), ex.what());
     }
 
-    if (dialogImportCVEDB != nullptr)
+    if (dialogImportNVDDB != nullptr)
     {
-        dialogImportCVEDB->close();
+        dialogImportNVDDB->close();
+    }
+}
+
+void QCVECheckApp::importNVDJsonRepo(QCVECheckApp *parent, const QString& NVDJsonRepoPath)
+{
+    try
+    {
+        parent->setCursor(Qt::CursorShape::WaitCursor);
+
+        if (!QFile::exists(NVDJsonRepoPath))
+        {
+            QMessageBox::critical(nullptr, tr("Import NVD Json Repository Error"), tr("Not valid NVD Json Repository Path"));
+            parent->setCursor(Qt::CursorShape::ArrowCursor);
+            return;
+        }
+
+        if (parent->sqliteDBManager->importNVDJsonRepo(NVDJsonRepoPath))
+        {
+            emit parent->importNVDJsonRepoFinished();
+            QMessageBox::information(nullptr, tr("Import NVD DB"), tr("Import of NVD Json Repository Successfully Executed"));
+        }
+        else
+        {
+            QMessageBox::critical(nullptr, tr("Import NVD DB Error"), tr("Import of NVD Json Repository Failed"));
+        }
+        parent->setCursor(Qt::CursorShape::ArrowCursor);
+    }
+    catch (QException ex)
+    {
+        QMessageBox::critical(nullptr, tr("Error"), ex.what());
+        parent->setCursor(Qt::CursorShape::ArrowCursor);
+    }
+}
+
+void QCVECheckApp::NVDJsonRepoImported()
+{
+    try
+    {
+        if (importNVDJsonRepoThread != nullptr)
+        {
+            importNVDJsonRepoThread->exit();
+            delete importNVDJsonRepoThread;
+            importNVDJsonRepoThread = nullptr;
+        }
+
+        {
+            QMutexLocker locker(subWindowMapMutex);
+            for (auto& mdiReportWindow : reportMap)
+            {
+                mdiReportWindow->LoadReportData();
+            }
+        }
+
+        {
+            QMutexLocker locker(mdiCVEDataMutex);
+            if (mdiCVEData)
+            {
+                mdiCVEData->reloadData();
+            }
+        }
+    }
+    catch (QException ex)
+    {
+        QMessageBox::critical(this, tr("Error"), ex.what());
+    }
+}
+
+void QCVECheckApp::on_action_Import_NVD_Json_Repo_triggered()
+{
+    try
+    {
+        dialogImportNVDJsonRepo = new DialogImportNVDJsonRepo(this);
+        QDialog::DialogCode returnValue = (QDialog::DialogCode)dialogImportNVDJsonRepo->exec();
+        if (returnValue == QDialog::DialogCode::Accepted)
+        {
+            QString NVDJsonRepoPath = dialogImportNVDJsonRepo->getNVDJsonRepoPath();
+
+            if (importNVDJsonRepoThread != nullptr)
+            {
+                importNVDJsonRepoThread->exit();
+                delete importNVDJsonRepoThread;
+                importNVDJsonRepoThread = nullptr;
+            }
+
+            importNVDJsonRepoThread = QThread::create(importNVDJsonRepo, this, NVDJsonRepoPath);
+            importNVDJsonRepoThread->start();
+        }
+    }
+    catch (QException ex)
+    {
+        QMessageBox::critical(this, tr("Error"), ex.what());
+    }
+
+    if (dialogImportNVDJsonRepo != nullptr)
+    {
+        dialogImportNVDJsonRepo->close();
+    }
+}
+
+void QCVECheckApp::importCVEJsonRepo(QCVECheckApp *parent, const QString& CVEJsonRepoPath)
+{
+    try
+    {
+        parent->setCursor(Qt::CursorShape::WaitCursor);
+
+        if (!QFile::exists(CVEJsonRepoPath))
+        {
+            QMessageBox::critical(nullptr, tr("Import NVD Json Repository Error"), tr("Not valid NVD Json Repository Path"));
+            parent->setCursor(Qt::CursorShape::ArrowCursor);
+            return;
+        }
+
+        if (parent->sqliteDBManager->importCVEJsonRepo(CVEJsonRepoPath))
+        {
+            emit parent->importNVDJsonRepoFinished();
+            QMessageBox::information(nullptr, tr("Import NVD DB"), tr("Import of NVD Json Repository Successfully Executed"));
+        }
+        else
+        {
+            QMessageBox::critical(nullptr, tr("Import NVD DB Error"), tr("Import of NVD Json Repository Failed"));
+        }
+        parent->setCursor(Qt::CursorShape::ArrowCursor);
+    }
+    catch (QException ex)
+    {
+        QMessageBox::critical(nullptr, tr("Error"), ex.what());
+        parent->setCursor(Qt::CursorShape::ArrowCursor);
+    }
+}
+
+void QCVECheckApp::CVEJsonRepoImported()
+{
+    try
+    {
+        if (importCVEJsonRepoThread != nullptr)
+        {
+            importCVEJsonRepoThread->exit();
+            delete importCVEJsonRepoThread;
+            importCVEJsonRepoThread = nullptr;
+        }
+
+        {
+            QMutexLocker locker(subWindowMapMutex);
+            for (auto& mdiReportWindow : reportMap)
+            {
+                mdiReportWindow->LoadReportData();
+            }
+        }
+
+        {
+            QMutexLocker locker(mdiCVEDataMutex);
+            if (mdiCVEData)
+            {
+                mdiCVEData->reloadData();
+            }
+        }
+    }
+    catch (QException ex)
+    {
+        QMessageBox::critical(this, tr("Error"), ex.what());
+    }
+}
+void QCVECheckApp::on_action_Import_CVE_Json_Repo_triggered()
+{
+    try
+    {
+        dialogImportCVEJsonRepo = new DialogImportCVEJsonRepo(this);
+        QDialog::DialogCode returnValue = (QDialog::DialogCode)dialogImportCVEJsonRepo->exec();
+        if (returnValue == QDialog::DialogCode::Accepted)
+        {
+            QString CVEJsonRepoPath = dialogImportCVEJsonRepo->getCVEJsonRepoPath();
+
+            if (importCVEJsonRepoThread != nullptr)
+            {
+                importCVEJsonRepoThread->exit();
+                delete importCVEJsonRepoThread;
+                importCVEJsonRepoThread = nullptr;
+            }
+
+            importCVEJsonRepoThread = QThread::create(importCVEJsonRepo, this, CVEJsonRepoPath);
+            importCVEJsonRepoThread->start();
+        }
+    }
+    catch (QException ex)
+    {
+        QMessageBox::critical(this, tr("Error"), ex.what());
+    }
+
+    if (dialogImportCVEJsonRepo != nullptr)
+    {
+        dialogImportCVEJsonRepo->close();
     }
 }
 
@@ -295,25 +588,25 @@ void QCVECheckApp::OpenCVEReportWindow(const QString& reportName)
     QMutexLocker locker(subWindowMapMutex);
     if (!reportName.isNull() && !reportName.isEmpty())
     {
-        if (subWindowsMap.contains(reportName))
+        if (reportMap.contains(reportName))
         {
-            MdiSubWindow* mdiSubWindow = (MdiSubWindow*) subWindowsMap.value(reportName);
-            if (ui->mdiArea->subWindowList().contains(mdiSubWindow))
+            MdiReport* mdiReportWindow = (MdiReport*) reportMap.value(reportName);
+            if (ui->mdiArea->subWindowList().contains(mdiReportWindow))
             {
-                mdiSubWindow->show();
+                mdiReportWindow->show();
             }
             else
             {
-                ui->mdiArea->addSubWindow(mdiSubWindow);
-                mdiSubWindow->show();
+                ui->mdiArea->addSubWindow(mdiReportWindow);
+                mdiReportWindow->show();
             }
         }
         else
         {
-            MdiSubWindow* mdiSubWindow = new MdiSubWindow(reportName, sqliteDBManager, this);
-            subWindowsMap.insert(reportName, mdiSubWindow);
-            ui->mdiArea->addSubWindow(mdiSubWindow);
-            mdiSubWindow->show();
+            MdiReport* mdiReportWindow = new MdiReport(reportName, sqliteDBManager, this);
+            reportMap.insert(reportName, mdiReportWindow);
+            ui->mdiArea->addSubWindow(mdiReportWindow);
+            mdiReportWindow->show();
         }
     }
 }
@@ -334,40 +627,40 @@ void QCVECheckApp::on_pushButtonOpen_clicked()
 void QCVECheckApp::on_pushButtonGeneral_clicked()
 {
     QMutexLocker locker(subWindowMapMutex);
-    if (subWindowsMap.contains(ui->comboBoxReports->currentText()))
-        subWindowsMap.value(ui->comboBoxReports->currentText())->scrollToGroupBox(MdiSubWindow::GroupBoxEnum::General);
+    if (reportMap.contains(ui->comboBoxReports->currentText()))
+        reportMap.value(ui->comboBoxReports->currentText())->scrollToGroupBox(MdiReport::GroupBoxEnum::General);
 }
 
 
 void QCVECheckApp::on_pushButtonSummary_clicked()
 {
     QMutexLocker locker(subWindowMapMutex);
-    if (subWindowsMap.contains(ui->comboBoxReports->currentText()))
-        subWindowsMap.value(ui->comboBoxReports->currentText())->scrollToGroupBox(MdiSubWindow::GroupBoxEnum::Summary);
+    if (reportMap.contains(ui->comboBoxReports->currentText()))
+        reportMap.value(ui->comboBoxReports->currentText())->scrollToGroupBox(MdiReport::GroupBoxEnum::Summary);
 }
 
 
 void QCVECheckApp::on_pushButtonPackages_clicked()
 {
     QMutexLocker locker(subWindowMapMutex);
-    if (subWindowsMap.contains(ui->comboBoxReports->currentText()))
-        subWindowsMap.value(ui->comboBoxReports->currentText())->scrollToGroupBox(MdiSubWindow::GroupBoxEnum::Packages);
+    if (reportMap.contains(ui->comboBoxReports->currentText()))
+        reportMap.value(ui->comboBoxReports->currentText())->scrollToGroupBox(MdiReport::GroupBoxEnum::Packages);
 }
 
 
 void QCVECheckApp::on_pushButtonCVEs_clicked()
 {
     QMutexLocker locker(subWindowMapMutex);
-    if (subWindowsMap.contains(ui->comboBoxReports->currentText()))
-        subWindowsMap.value(ui->comboBoxReports->currentText())->scrollToGroupBox(MdiSubWindow::GroupBoxEnum::CVEs);
+    if (reportMap.contains(ui->comboBoxReports->currentText()))
+        reportMap.value(ui->comboBoxReports->currentText())->scrollToGroupBox(MdiReport::GroupBoxEnum::CVEs);
 }
 
 
 void QCVECheckApp::on_pushButtonIgnoredCVEs_clicked()
 {
     QMutexLocker locker(subWindowMapMutex);
-    if (subWindowsMap.contains(ui->comboBoxReports->currentText()))
-        subWindowsMap.value(ui->comboBoxReports->currentText())->scrollToGroupBox(MdiSubWindow::GroupBoxEnum::IgnoredCVEs);
+    if (reportMap.contains(ui->comboBoxReports->currentText()))
+        reportMap.value(ui->comboBoxReports->currentText())->scrollToGroupBox(MdiReport::GroupBoxEnum::IgnoredCVEs);
 }
 
 void QCVECheckApp::on_pushButtonCVEData_clicked()
@@ -418,7 +711,7 @@ void QCVECheckApp::on_pushButtonExportReport_clicked()
 }
 
 
-void QCVECheckApp::on_actionAbout_QCVECheckReport_triggered()
+void QCVECheckApp::on_action_About_QCVECheckReport_triggered()
 {
     QMessageBox::aboutQt(this);
 }

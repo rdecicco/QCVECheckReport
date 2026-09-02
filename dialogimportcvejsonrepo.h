@@ -1,7 +1,7 @@
 /*!
    QCVECheckReport project
 
-   @file: dialogimportcvereport.h
+   @file: dialogimportcvejsonrepo.h
 
    @author: Raffaele de Cicco <decicco.raffaele@gmail.com>
 
@@ -25,36 +25,33 @@
    limitations under the License.
  */
 
-#ifndef DIALOGIMPORTCVEREPORT_H
-#define DIALOGIMPORTCVEREPORT_H
+#ifndef DIALOGIMPORTCVEJSONREPO_H
+#define DIALOGIMPORTCVEJSONREPO_H
 
 #include <QDialog>
 
 namespace Ui {
-class DialogImportCVEReport;
+class DialogImportCVEJsonRepo;
 }
 
-class DialogImportCVEReport : public QDialog
+class DialogImportCVEJsonRepo : public QDialog
 {
     Q_OBJECT
 
 public:
-    explicit DialogImportCVEReport(QWidget *parent = nullptr);
-    ~DialogImportCVEReport();
-    QString getJsonReportFileName() { return jsonReportFileName; };
-    QString getNVDDbFileName() { return NVDDBFileName; };
+    explicit DialogImportCVEJsonRepo(QWidget *parent = nullptr);
+    ~DialogImportCVEJsonRepo();
+    QString getCVEJsonRepoPath() { return CVEJsonRepoPath; };
 
 protected slots:
     void accept() override;
 
 private slots:
-    void on_pushButtonOpenJsonReportFileName_clicked();
-    void on_pushButtonOpenNVDDbFileName_clicked();
+    void on_pushButtonOpenCVEJsonRepo_clicked();
 
 private:
-    Ui::DialogImportCVEReport *ui;
-    QString jsonReportFileName;
-    QString NVDDBFileName;
+    Ui::DialogImportCVEJsonRepo *ui;
+    QString CVEJsonRepoPath;
 };
 
-#endif // DIALOGIMPORTCVEREPORT_H
+#endif // DIALOGIMPORTCVEJSONREPO_H

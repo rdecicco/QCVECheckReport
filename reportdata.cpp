@@ -32,7 +32,6 @@
 #include "DTO/packagedto.h"
 #include "qsqlitemanager.h"
 #include <QMessageBox>
-#include <fstream>
 #include <qfileinfo.h>
 
 ReportData::ReportData(const QString reportFile, QSQLiteManager *sqlManager, QObject *parent)
@@ -296,15 +295,16 @@ QString ReportData::getHtmlReport()
     QString htmlReport;
     htmlReport.append("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN \"http://www.w3.org/TR/html4/strict.dtd\">");
     htmlReport.append("<HTML>");
-    htmlReport.append(getHtmlHeader());
-    htmlReport.append(getHtmlBody());
+    htmlReport.append(getHtmlReportHeader());
+    htmlReport.append(getHtmlReportBody());
     htmlReport.append("</HTML>");
 
     QFile htmlReportFile{"HTMLReport.html"};
-    htmlReportFile.open(QFile::WriteOnly);
-    htmlReportFile.write(htmlReport.toStdString().c_str());
-    htmlReportFile.flush();
-    htmlReportFile.close();
+    if (htmlReportFile.open(QFile::WriteOnly)) {
+        htmlReportFile.write(htmlReport.toStdString().c_str());
+        htmlReportFile.flush();
+        htmlReportFile.close();
+    }
 
     return htmlReport;
 }
@@ -496,7 +496,7 @@ QString ReportData::setStyleSheet()
     return htmlStyle;
 }
 
-QString ReportData::getHtmlHeader()
+QString ReportData::getHtmlReportHeader()
 {
     QString htmlHeader = QString("<HEAD>"
                                  "<TITLE>%1</TITLE>"
@@ -505,7 +505,7 @@ QString ReportData::getHtmlHeader()
     return htmlHeader;
 }
 
-QString ReportData::getHtmlBody()
+QString ReportData::getHtmlReportBody()
 {
     QString htmlBody = QString("<BODY>");
     htmlBody.append("<DIV id='pagelayout' style='overflow-x:auto;'>");

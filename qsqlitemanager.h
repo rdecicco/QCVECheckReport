@@ -49,8 +49,14 @@ public:
     bool openConnection();
     bool closeConnection();
     bool isNewReport(QString jsonReportFileName);
-    bool importJson(const QString& FileName, const QJsonDocument& jsonCVEReport);
-    bool importCVEDb(const QString &CVEDBFileName);
+
+    bool importCVEJsonReport(const QString& FileName, const QJsonDocument& jsonCVEReport);
+    bool importNVDDb(const QString &NVDDBFileName);
+
+    bool importSBOMCVEJsonReport(const QString& FileName, const QJsonDocument& jsonSBOMCVEReport);
+    bool importNVDJsonRepo(const QString &NVDJsonRepoPath);
+    bool importCVEJsonRepo(const QString &CVEJsonRepoPath);
+
     QStringList getCVEReportsList();
 
     AbstractDTO::SharedDTO getFullCVEReport(const QString& reportName);

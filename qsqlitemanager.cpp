@@ -148,7 +148,7 @@ QSQLiteManager::~QSQLiteManager()
     delete m;
 }
 
-bool QSQLiteManager::importJson(const QString &FileName, const QJsonDocument &jsonDocument)
+bool QSQLiteManager::importCVEJsonReport(const QString &FileName, const QJsonDocument &jsonDocument)
 {
     QMutexLocker locker(m);
     try
@@ -230,6 +230,14 @@ bool QSQLiteManager::importJson(const QString &FileName, const QJsonDocument &js
                                     const std::shared_ptr<AbstractDTO::Key> issueKey = issueDAO.createDTO(*issueDTO);
                                 }
                             }
+                            else if (packageProductKey == "cpes")
+                            {
+                                QJsonValue cpes = packageObject.value("cpes");
+                                if (!cpes.isArray())
+                                {
+                                    throw new QException();
+                                }
+                            }
                             else if (packageProductKey != "name" && packageProductKey != "layer" && packageProductKey != "version")
                             {
                                 throw new QException();
@@ -258,40 +266,40 @@ bool QSQLiteManager::importJson(const QString &FileName, const QJsonDocument &js
     return true;
 }
 
-bool QSQLiteManager::importCVEDb(const QString& CVEDBFileName)
+bool QSQLiteManager::importNVDDb(const QString& NVDDBFileName)
 {
     QMutexLocker locker(m);
-    QSqlDatabase cveDbDatabase;
+    QSqlDatabase nvdDbDatabase;
     try
     {
         //ATTACH DATABASE filename AS databasename
 
         if (openConnection())
         {
-            if (QSqlDatabase::contains(CVEDBFileName))
+            if (QSqlDatabase::contains(NVDDBFileName))
             {
-                QSqlDatabase::removeDatabase(CVEDBFileName);
+                QSqlDatabase::removeDatabase(NVDDBFileName);
             }
 
-            cveDbDatabase = QSqlDatabase::addDatabase("QSQLITE", CVEDBFileName);
+            nvdDbDatabase = QSqlDatabase::addDatabase("QSQLITE", NVDDBFileName);
 
-            if (!cveDbDatabase.open())
+            if (!nvdDbDatabase.open())
             {
-                QMessageBox::critical(nullptr, tr("SQL Database Error"), cveDbDatabase.lastError().text());
+                QMessageBox::critical(nullptr, tr("SQL Database Error"), nvdDbDatabase.lastError().text());
                 closeConnection();
                 return false;
             }
-            if (!cveDbDatabase.driver()->open(CVEDBFileName))
+            if (!nvdDbDatabase.driver()->open(NVDDBFileName))
             {
                 QMessageBox::critical(nullptr, tr("SQL Database Error"), sqlDatabase.lastError().text());
-                cveDbDatabase.close();
+                nvdDbDatabase.close();
                 closeConnection();
                 return false;
             }
 
             if (sqlDatabase.transaction())
             {
-                NVDDAO nvdSource(cveDbDatabase);
+                NVDDAO nvdSource(nvdDbDatabase);
                 NVDDAO nvdSink(sqlDatabase);
                 auto newNVDData = nvdSource.getAllNVDs();
                 for (auto&& newNVD : newNVDData)
@@ -313,7 +321,7 @@ bool QSQLiteManager::importCVEDb(const QString& CVEDBFileName)
                     }
                 }
 
-                ProductDAO productSource(cveDbDatabase);
+                ProductDAO productSource(nvdDbDatabase);
                 ProductDAO productSink(sqlDatabase);
                 auto newProductData = productSource.getAllProducts();
                 for (auto&& newProduct : newProductData)
@@ -326,8 +334,8 @@ bool QSQLiteManager::importCVEDb(const QString& CVEDBFileName)
                 sqlDatabase.commit();
             }
 
-            cveDbDatabase.driver()->close();
-            cveDbDatabase.close();
+            nvdDbDatabase.driver()->close();
+            nvdDbDatabase.close();
             closeConnection();
         }
     }
@@ -338,20 +346,32 @@ bool QSQLiteManager::importCVEDb(const QString& CVEDBFileName)
             sqlDatabase.rollback();
             closeConnection();
         }
-        if (cveDbDatabase.isValid())
+        if (nvdDbDatabase.isValid())
         {
-            if (cveDbDatabase.driver()->isOpen())
+            if (nvdDbDatabase.driver()->isOpen())
             {
-                cveDbDatabase.driver()->close();
+                nvdDbDatabase.driver()->close();
             }
-            if (cveDbDatabase.isOpen())
+            if (nvdDbDatabase.isOpen())
             {
-                cveDbDatabase.close();
+                nvdDbDatabase.close();
             }
         }
         return false;
     }
 
+    return true;
+}
+
+bool QSQLiteManager::importSBOMCVEJsonReport(const QString &FileName, const QJsonDocument &jsonDocument) {
+    return importCVEJsonReport(FileName, jsonDocument);
+}
+
+bool QSQLiteManager::importNVDJsonRepo(const QString &NVDJsonRepoPath) {    
+    return true;
+}
+
+bool QSQLiteManager::importCVEJsonRepo(const QString &CVEJsonRepoPath) {
     return true;
 }
 
